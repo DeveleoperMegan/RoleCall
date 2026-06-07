@@ -1,8 +1,57 @@
 # Default ignored files
 /shelf/
 /workspace.xml
+
 # Editor-based HTTP Client requests
 /httpRequests/
+
 # Datasource local storage ignored files
 /dataSources/
 /dataSources.local.xml
+
+# ── Android / Gradle ──────────────────────────────
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+/.idea/gradle.xml
+/.idea/misc.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+#── App build outputs ─────────────────────────────
+/app/build
+/app/release
+*.apk
+*.ap_
+*.aab
+
+#── Kotlin / Compose ──────────────────────────────
+*.class
+*.log
+
+#── OS generated ──────────────────────────────────
+Thumbs.db
+*.swp
+*.swo
+
+# ── Environment / IDE ─────────────────────────────
+.env
+.idea/
+.gradle/
+build/
+
+# ── Python (if any local scripts) ─────────────────
+__pycache__/
+*.pyc
+*.pyo
+venv/
