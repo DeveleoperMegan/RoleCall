@@ -7,19 +7,39 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.rolecall.data.mock.MockData
+import com.example.rolecall.data.repository.JobRepository
 import com.example.rolecall.ui.components.MatchBadge
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class JobDetailViewModel @Inject constructor(
+    private val repository: JobRepository
+) : ViewModel() {
+
+    fun saveJob(job: com.example.rolecall.data.model.JobItem) {
+        viewModelScope.launch {
+            repository.saveJob(job)
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JobDetailScreen(navController: NavController, jobId: String) {
-    //Find the job from mock data; this will be fetched from API/Room in next sprint
+    val viewModel: JobDetailViewModel = hiltViewModel()
+
     val job = remember(jobId) {
         MockData.getMockJobs().find { it.id == jobId }
     }
 
-    //If job not found, show a simple error state
     if (job == null) {
         Scaffold(
             topBar = { TopAppBar(title = { Text("Job Details") }) }
@@ -34,7 +54,6 @@ fun JobDetailScreen(navController: NavController, jobId: String) {
         return
     }
 
-    //Mock explanation phrases. This will come from API response once integrated
     val mockPhrases = remember {
         listOf(
             "3 years of Kotlin development",
@@ -43,12 +62,13 @@ fun JobDetailScreen(navController: NavController, jobId: String) {
         )
     }
 
+    var saved by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Job Details") },
                 navigationIcon = {
-                    // Back navigation
                     TextButton(onClick = { navController.popBackStack() }) {
                         Text("Back")
                     }
@@ -58,10 +78,11 @@ fun JobDetailScreen(navController: NavController, jobId: String) {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    // TODO: Save to Room database
+                    viewModel.saveJob(job)
+                    saved = true
                 }
             ) {
-                Text("Save", style = MaterialTheme.typography.labelMedium)
+                Text(if (saved) "Saved!" else "Save")
             }
         }
     ) { padding ->
@@ -71,7 +92,6 @@ fun JobDetailScreen(navController: NavController, jobId: String) {
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            //Job title, company, location
             Text(
                 text = job.title,
                 style = MaterialTheme.typography.headlineSmall,
@@ -90,7 +110,6 @@ fun JobDetailScreen(navController: NavController, jobId: String) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            //Match badge and score label
             Row(verticalAlignment = Alignment.CenterVertically) {
                 MatchBadge(score = job.matchScore)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -107,7 +126,6 @@ fun JobDetailScreen(navController: NavController, jobId: String) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            //"Why this match?" section
             Text(
                 text = "Why this match?",
                 style = MaterialTheme.typography.titleMedium,
@@ -124,7 +142,6 @@ fun JobDetailScreen(navController: NavController, jobId: String) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            //Full job description (mock)
             Text(
                 text = "Full Description",
                 style = MaterialTheme.typography.titleMedium,

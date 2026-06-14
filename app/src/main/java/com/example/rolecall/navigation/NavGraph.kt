@@ -11,8 +11,12 @@ import com.example.rolecall.ui.screens.*
 @Composable
 fun RoleCallNavGraph(navController: NavHostController) {
     NavHost(navController = navController, startDestination = Routes.UPLOAD) {
-        composable(Routes.UPLOAD) { UploadScreen(navController) }
-        composable(Routes.RESULTS) { ResultsScreen(navController) }
+        composable(Routes.UPLOAD) {
+            UploadScreen(navController)
+        }
+        composable(Routes.RESULTS) {
+            ResultsScreen(navController)
+        }
         composable(
             Routes.JOB_DETAIL,
             arguments = listOf(navArgument("jobId") { type = NavType.StringType })
@@ -20,6 +24,8 @@ fun RoleCallNavGraph(navController: NavHostController) {
             val jobId = backStackEntry.arguments?.getString("jobId") ?: ""
             JobDetailScreen(navController, jobId)
         }
-        composable(Routes.HISTORY) { HistoryScreen(navController) }
+        composable(Routes.HISTORY) {
+            HistoryScreen(navController)
+        }
     }
 }

@@ -3,27 +3,52 @@ package com.example.rolecall.ui.screens
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.rolecall.data.model.JobItem
+import com.example.rolecall.data.repository.JobRepository
+import com.example.rolecall.ui.components.JobCard
+import com.example.rolecall.ui.components.MatchBadge
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-// Simple model for a past match session – you can later move this to data/model/
 data class MatchHistoryItem(
     val date: String,
     val topMatchTitle: String,
     val topMatchScore: Float
 )
 
+@HiltViewModel
+class HistoryViewModel @Inject constructor(
+    private val repository: JobRepository
+) : ViewModel() {
+
+    val savedJobs: StateFlow<List<JobItem>> = repository.getAllSavedJobs()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(navController: NavController) {
+    val viewModel: HistoryViewModel = hiltViewModel()
+    val savedJobs by viewModel.savedJobs.collectAsState()
+
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("History", "Saved")
 
-    // Mock history – in the future this will come from Room
     val mockHistory = remember {
         listOf(
             MatchHistoryItem("2025-05-20", "Android Developer", 92f),
@@ -31,9 +56,6 @@ fun HistoryScreen(navController: NavController) {
             MatchHistoryItem("2025-05-15", "Data Scientist", 78f)
         )
     }
-
-    // Mock saved jobs – will be populated from Room later
-    val mockSavedJobs = remember { mutableStateListOf<com.example.rolecall.data.model.JobItem>() }
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("My Jobs") }) }
@@ -51,7 +73,7 @@ fun HistoryScreen(navController: NavController) {
 
             when (selectedTab) {
                 0 -> HistoryTab(mockHistory)
-                1 -> SavedTab(mockSavedJobs, navController)
+                1 -> SavedTab(savedJobs, navController)
             }
         }
     }
@@ -81,9 +103,7 @@ private fun HistoryCard(item: MatchHistoryItem) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable {
-                // Optionally navigate to results screen with that session – not implemented yet
-            }
+            .clickable { }
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
@@ -96,12 +116,12 @@ private fun HistoryCard(item: MatchHistoryItem) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        com.example.rolecall.ui.components.MatchBadge(score = item.topMatchScore)
+        MatchBadge(score = item.topMatchScore)
     }
 }
 
 @Composable
-private fun SavedTab(savedJobs: List<com.example.rolecall.data.model.JobItem>, navController: NavController) {
+private fun SavedTab(savedJobs: List<JobItem>, navController: NavController) {
     if (savedJobs.isEmpty()) {
         Box(
             modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -111,11 +131,11 @@ private fun SavedTab(savedJobs: List<com.example.rolecall.data.model.JobItem>, n
         }
     } else {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(savedJobs.size) { index ->
-                com.example.rolecall.ui.components.JobCard(
-                    job = savedJobs[index],
+            items(savedJobs) { job ->
+                JobCard(
+                    job = job,
                     onClick = {
-                        navController.navigate("job_detail/${savedJobs[index].id}")
+                        navController.navigate("job_detail/${job.id}")
                     }
                 )
             }

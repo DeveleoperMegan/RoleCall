@@ -20,14 +20,12 @@ import com.example.rolecall.ui.theme.SecondaryText
 fun UploadScreen(navController: NavController) {
     var selectedFileName by remember { mutableStateOf<String?>(null) }
 
-    // Full‑screen grey background (SecondaryText color)
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(SecondaryText),
         contentAlignment = Alignment.Center
     ) {
-        // Dark card‑like square
         Surface(
             modifier = Modifier
                 .widthIn(max = 400.dp)
@@ -42,7 +40,6 @@ fun UploadScreen(navController: NavController) {
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                //RoleCall logo at the top of the card (centered)
                 Image(
                     painter = painterResource(id = R.drawable.rolecall_logo),
                     contentDescription = "RoleCall Logo",
@@ -59,7 +56,6 @@ fun UploadScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                //Upload PDF / DOCX button
                 Button(onClick = {
                     selectedFileName = "resume.pdf"
                 }) {
@@ -68,7 +64,6 @@ fun UploadScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                //Take Photo button
                 Button(onClick = {
                     selectedFileName = "resume_photo.jpg"
                 }) {
@@ -86,7 +81,6 @@ fun UploadScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                //Temporary button to enter mock results
                 OutlinedButton(onClick = { navController.navigate(Routes.RESULTS) }) {
                     Text("See Results (mock)")
                 }
