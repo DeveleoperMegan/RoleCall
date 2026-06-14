@@ -10,12 +10,17 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.rolecall.data.mock.MockData
+import com.example.rolecall.data.model.JobItem
 import com.example.rolecall.data.repository.JobRepository
 import com.example.rolecall.ui.components.MatchBadge
+import com.example.rolecall.ui.components.RoleCallScaffold
+import com.example.rolecall.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -24,35 +29,41 @@ class JobDetailViewModel @Inject constructor(
     private val repository: JobRepository
 ) : ViewModel() {
 
-    fun saveJob(job: com.example.rolecall.data.model.JobItem) {
+    val savedJobs: StateFlow<List<JobItem>> = repository.getAllSavedJobs()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun saveJob(job: JobItem) {
         viewModelScope.launch {
             repository.saveJob(job)
         }
     }
+
+    fun deleteJob(job: JobItem) {
+        viewModelScope.launch {
+            repository.deleteSavedJob(job)
+        }
+    }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JobDetailScreen(navController: NavController, jobId: String) {
     val viewModel: JobDetailViewModel = hiltViewModel()
+    val savedJobs by viewModel.savedJobs.collectAsState()
 
     val job = remember(jobId) {
         MockData.getMockJobs().find { it.id == jobId }
     }
 
     if (job == null) {
-        Scaffold(
-            topBar = { TopAppBar(title = { Text("Job Details") }) }
-        ) { padding ->
-            Box(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Job not found.")
+        RoleCallScaffold(navController = navController) { modifier ->
+            Box(modifier = modifier, contentAlignment = Alignment.Center) {
+                Text("Job not found.", color = PrimaryText)
             }
         }
         return
     }
+
+    val isJobSaved = savedJobs.any { it.id == job.id }
 
     val mockPhrases = remember {
         listOf(
@@ -62,50 +73,28 @@ fun JobDetailScreen(navController: NavController, jobId: String) {
         )
     }
 
-    var saved by remember { mutableStateOf(false) }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Job Details") },
-                navigationIcon = {
-                    TextButton(onClick = { navController.popBackStack() }) {
-                        Text("Back")
-                    }
-                }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    viewModel.saveJob(job)
-                    saved = true
-                }
-            ) {
-                Text(if (saved) "Saved!" else "Save")
-            }
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
-        ) {
+    RoleCallScaffold(
+        navController = navController,
+        title = "Job Details",
+        showSearchBar = false
+    ) { modifier ->
+        Column(modifier = modifier.padding(16.dp)) {
             Text(
                 text = job.title,
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = PrimaryText
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = job.company,
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
+                color = SecondaryText
             )
             Text(
                 text = job.location,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = SecondaryText
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -120,7 +109,7 @@ fun JobDetailScreen(navController: NavController, jobId: String) {
                         else -> "Average Match"
                     },
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
+                    color = PrimaryText
                 )
             }
 
@@ -129,13 +118,15 @@ fun JobDetailScreen(navController: NavController, jobId: String) {
             Text(
                 text = "Why this match?",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                color = PrimaryText
             )
             Spacer(modifier = Modifier.height(8.dp))
             mockPhrases.forEach { phrase ->
                 Text(
                     text = "• $phrase",
                     style = MaterialTheme.typography.bodyMedium,
+                    color = SecondaryText,
                     modifier = Modifier.padding(start = 8.dp, top = 2.dp, bottom = 2.dp)
                 )
             }
@@ -145,7 +136,8 @@ fun JobDetailScreen(navController: NavController, jobId: String) {
             Text(
                 text = "Full Description",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                color = PrimaryText
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -154,8 +146,26 @@ fun JobDetailScreen(navController: NavController, jobId: String) {
                         "and a passion for building intuitive user experiences. " +
                         "You will work closely with product managers and designers to " +
                         "deliver high‑quality applications that scale.",
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
+                color = SecondaryText
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = {
+                    if (isJobSaved) {
+                        viewModel.deleteJob(job)
+                    } else {
+                        viewModel.saveJob(job)
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isJobSaved) AccentSuccess else UiInteractive
+                )
+            ) {
+                Text(if (isJobSaved) "✓ Saved" else "Save Job")
+            }
         }
     }
 }
