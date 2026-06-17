@@ -3,21 +3,34 @@ package com.example.rolecall.ui.screens
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.rolecall.R
 import com.example.rolecall.navigation.Routes
+import com.example.rolecall.network.AuthRepository
+import com.example.rolecall.network.FastAPIRepository
+import com.example.rolecall.network.TokenManager
 import com.example.rolecall.ui.theme.FoundationDark
 import com.example.rolecall.ui.theme.SecondaryText
+import kotlinx.coroutines.launch
 
 @Composable
-fun UploadScreen(navController: NavController) {
+fun UploadScreen(navController: NavController, onLogout: () -> Unit) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val tokenManager = remember { TokenManager(context) }
+    val fastAPIRepository = remember { FastAPIRepository(tokenManager) }
+
+    var apiData by remember { mutableStateOf("No Data Retrieved") }
+
     var selectedFileName by remember { mutableStateOf<String?>(null) }
 
     // Full‑screen grey background (SecondaryText color)
@@ -27,6 +40,27 @@ fun UploadScreen(navController: NavController) {
             .background(SecondaryText),
         contentAlignment = Alignment.Center
     ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.Top
+        ) {
+            // Sign out
+            Button(
+                onClick = {
+                    coroutineScope.launch {
+                        AuthRepository.signOut(tokenManager)
+                        // redirect to login
+                        onLogout()
+                    }
+                },
+            ) {
+                Text("Sign Out")
+            }
+        }
+
         // Dark card‑like square
         Surface(
             modifier = Modifier
@@ -82,6 +116,23 @@ fun UploadScreen(navController: NavController) {
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
+                }
+
+                // Test Request Button
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            val result = fastAPIRepository.checkHealth()
+
+                            if(result != null) {
+                                apiData = result
+                            } else {
+                                apiData = "Failed to fetch data"
+                            }
+                        }
+                    }
+                ) {
+                    Text("Get Health Check")
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
