@@ -59,6 +59,23 @@ fun UploadScreen(navController: NavController, onLogout: () -> Unit) {
             ) {
                 Text("Sign Out")
             }
+
+            // Sign out
+            Button(
+                onClick = {
+                    coroutineScope.launch {
+                        val result = fastAPIRepository.getUserEmail()
+
+                        if(result != null) {
+                            apiData = result
+                        } else {
+                            apiData = "Failed to fetch data"
+                        }
+                    }
+                },
+            ) {
+                Text("User")
+            }
         }
 
         // Dark card‑like square
