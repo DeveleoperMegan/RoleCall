@@ -3,8 +3,6 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.hilt.android)
-    id("com.google.devtools.ksp")
 }
 
 android {
@@ -54,6 +52,19 @@ kotlin {
 }
 
 dependencies {
+    // Supabase Auth deps
+    implementation(platform("io.github.jan-tennert.supabase:bom:3.0.0"))
+    implementation("io.github.jan-tennert.supabase:auth-kt")
+    implementation("io.ktor:ktor-client-android:3.0.0")
+    implementation("io.ktor:ktor-client-auth:3.0.0")
+
+    // JWT Store
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
+    // extended icons
+    implementation("androidx.compose.material:material-icons-extended")
+
+    // Core Android/Compose deps
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
