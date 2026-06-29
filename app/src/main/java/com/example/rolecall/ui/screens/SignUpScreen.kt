@@ -17,29 +17,30 @@ import com.example.rolecall.ui.theme.SecondaryText
 import com.example.rolecall.ui.theme.UiInteractive
 
 @Composable
-fun LoginScreen(navController: NavController) {
+fun SignupScreen(navController: NavController) {
     val viewModel: AuthViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.isLoggedIn) {
         if (uiState.isLoggedIn) {
             navController.navigate(Routes.UPLOAD) {
-                popUpTo(Routes.LOGIN) { inclusive = true }
+                popUpTo(Routes.SIGNUP) { inclusive = true }
             }
         }
     }
 
-    RoleCallScaffold(navController = navController, title = "Log In", showSearchBar = false) { modifier ->
+    RoleCallScaffold(navController = navController, title = "Sign Up", showSearchBar = false) { modifier ->
         Column(
             modifier = modifier.padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text("Welcome Back", style = MaterialTheme.typography.headlineMedium, color = PrimaryText)
+            Text("Create Account", style = MaterialTheme.typography.headlineMedium, color = PrimaryText)
             Spacer(modifier = Modifier.height(32.dp))
 
             OutlinedTextField(
@@ -80,6 +81,30 @@ fun LoginScreen(navController: NavController) {
                 )
             )
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = confirmPassword,
+                onValueChange = { confirmPassword = it },
+                label = { Text("Confirm Password") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                visualTransformation = PasswordVisualTransformation(),
+                isError = confirmPassword.isNotEmpty() && password != confirmPassword,
+                supportingText = {
+                    if (confirmPassword.isNotEmpty() && password != confirmPassword) {
+                        Text("Passwords do not match")
+                    }
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = PrimaryText,
+                    unfocusedTextColor = PrimaryText,
+                    cursorColor = PrimaryText,
+                    focusedBorderColor = UiInteractive,
+                    unfocusedBorderColor = SecondaryText
+                )
+            )
+
             if (uiState.errorMessage != null) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(uiState.errorMessage!!, color = MaterialTheme.colorScheme.error)
@@ -88,8 +113,11 @@ fun LoginScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = { viewModel.logIn(email, password) },
-                enabled = !uiState.isLoading && email.isNotBlank() && password.isNotBlank(),
+                onClick = { viewModel.signUp(email, password) },
+                enabled = !uiState.isLoading &&
+                        email.isNotBlank() &&
+                        password.isNotBlank() &&
+                        password == confirmPassword,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = UiInteractive)
             ) {
@@ -99,14 +127,14 @@ fun LoginScreen(navController: NavController) {
                         color = PrimaryText
                     )
                 } else {
-                    Text("Log In")
+                    Text("Sign Up")
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            TextButton(onClick = { navController.navigate(Routes.SIGNUP) }) {
-                Text("Don't have an account? Sign Up", color = SecondaryText)
+            TextButton(onClick = { navController.navigate(Routes.LOGIN) }) {
+                Text("Already have an account? Log In", color = SecondaryText)
             }
         }
     }

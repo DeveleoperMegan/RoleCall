@@ -14,6 +14,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
+import com.example.rolecall.data.local.entity.MatchHistoryEntity
 import com.example.rolecall.data.model.JobItem
 import com.example.rolecall.data.repository.JobRepository
 import com.example.rolecall.ui.components.JobCard
@@ -26,18 +27,15 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class MatchHistoryItem(
-    val date: String,
-    val topMatchTitle: String,
-    val topMatchScore: Float
-)
-
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
     private val repository: JobRepository
 ) : ViewModel() {
 
     val savedJobs: StateFlow<List<JobItem>> = repository.getAllSavedJobs()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val matchHistory: StateFlow<List<MatchHistoryEntity>> = repository.getAllMatchHistory()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun deleteJob(job: JobItem) {
@@ -51,17 +49,10 @@ class HistoryViewModel @Inject constructor(
 fun HistoryScreen(navController: NavController) {
     val viewModel: HistoryViewModel = hiltViewModel()
     val savedJobs by viewModel.savedJobs.collectAsState()
+    val matchHistory by viewModel.matchHistory.collectAsState()
 
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("History", "Saved")
-
-    val mockHistory = remember {
-        listOf(
-            MatchHistoryItem("2025-05-20", "Android Developer", 92f),
-            MatchHistoryItem("2025-05-18", "Backend Engineer", 85f),
-            MatchHistoryItem("2025-05-15", "Data Scientist", 78f)
-        )
-    }
 
     RoleCallScaffold(
         navController = navController,
@@ -89,7 +80,7 @@ fun HistoryScreen(navController: NavController) {
             }
 
             when (selectedTab) {
-                0 -> HistoryTab(mockHistory)
+                0 -> HistoryTab(matchHistory, navController)
                 1 -> SavedTab(savedJobs, navController, viewModel::deleteJob)
             }
         }
@@ -97,7 +88,7 @@ fun HistoryScreen(navController: NavController) {
 }
 
 @Composable
-private fun HistoryTab(history: List<MatchHistoryItem>) {
+private fun HistoryTab(history: List<MatchHistoryEntity>, navController: NavController) {
     if (history.isEmpty()) {
         Box(
             modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -115,7 +106,10 @@ private fun HistoryTab(history: List<MatchHistoryItem>) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { },
+                        .clickable {
+                            // Navigate to Results screen with this match history ID
+                            navController.navigate("results/${item.id}")
+                        },
                     colors = CardDefaults.cardColors(containerColor = PrimaryText),
                     shape = RoundedCornerShape(12.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -129,18 +123,26 @@ private fun HistoryTab(history: List<MatchHistoryItem>) {
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = item.date,
+                                text = formatDate(item.date),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = Border
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Top match: ${item.topMatchTitle}",
+                                text = "Job ID: ${item.jobId}",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Border.copy(alpha = 0.7f)
                             )
+                            Text(
+                                text = "Match Score: ${(item.score * 100).toInt()}%",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Border.copy(alpha = 0.5f)
+                            )
                         }
-                        com.example.rolecall.ui.components.MatchBadge(score = item.topMatchScore)
+
+                        com.example.rolecall.ui.components.MatchBadge(
+                            score = (item.score * 100).toFloat()
+                        )
                     }
                 }
             }
@@ -181,4 +183,9 @@ private fun SavedTab(
             }
         }
     }
+}
+
+private fun formatDate(timestamp: Long): String {
+    val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
+    return sdf.format(java.util.Date(timestamp))
 }

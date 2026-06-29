@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.hilt.android)
     id("com.google.devtools.ksp")
 }
 
@@ -39,6 +40,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         resources {
@@ -90,4 +92,9 @@ dependencies {
     ksp("com.google.dagger:hilt-android-compiler:2.51.1")
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.material.icons.extended)
+
+    //retrofit dependencies
+    implementation(libs.retrofit.core)
+    implementation(libs.retrofit.gson)
+    implementation(libs.okhttp.logging)
 }

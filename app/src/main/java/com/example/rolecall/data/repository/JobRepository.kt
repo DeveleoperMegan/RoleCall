@@ -1,4 +1,5 @@
 package com.example.rolecall.data.repository
+
 import com.example.rolecall.data.local.dao.MatchHistoryDao
 import com.example.rolecall.data.local.dao.ResumeDao
 import com.example.rolecall.data.local.dao.SavedJobDao
@@ -22,12 +23,22 @@ class JobRepository(
         }
     }
 
+    fun getAppliedJobs(): Flow<List<JobItem>> {
+        return savedJobDao.getAppliedJobs().map { entities ->
+            entities.map { it.toJobItem() }
+        }
+    }
+
     fun isJobSaved(jobId: String): Flow<Boolean> {
         return savedJobDao.isJobSaved(jobId)
     }
 
     suspend fun saveJob(job: JobItem) {
         savedJobDao.saveJob(job.toEntity())
+    }
+
+    suspend fun applyToJob(job: JobItem) {
+        savedJobDao.updateJobStatus(job.id, "applied")
     }
 
     suspend fun deleteSavedJob(job: JobItem) {
@@ -70,6 +81,7 @@ class JobRepository(
         location = location,
         description = "",
         matchScore = matchScore,
+        status = "saved",
         dateSaved = System.currentTimeMillis()
     )
 
@@ -81,4 +93,3 @@ class JobRepository(
         matchScore = matchScore
     )
 }
-

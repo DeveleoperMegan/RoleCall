@@ -1,55 +1,58 @@
 package com.example.rolecall.navigation
 
-import android.util.Log
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.example.rolecall.network.TokenManager
 import com.example.rolecall.ui.screens.*
-
 
 @Composable
 fun RoleCallNavGraph(navController: NavHostController) {
-    val context = LocalContext.current
-    val tokenManager = remember { TokenManager(context) }
+    val authViewModel: AuthViewModel = hiltViewModel()
+    val uiState by authViewModel.uiState.collectAsState()
 
-    val startRoute = if (tokenManager.getJWT() != null) {
-        Routes.UPLOAD
-    } else {
-        Routes.LOGIN
-    }
+    val startDestination = if (uiState.isLoggedIn) Routes.UPLOAD else Routes.LOGIN
 
-    NavHost(navController = navController, startDestination = startRoute) {
+    NavHost(navController = navController, startDestination = startDestination) {
+
+        // Auth screens
         composable(Routes.LOGIN) {
-            LoginScreen(
-                onLoginSuccess = { token ->
-                    // TODO: Delete after testing
-                    Log.d("SUPABASE", "Success. Supabase JWT Token: $token")
-
-                    navController.navigate(Routes.UPLOAD) {
-                        popUpTo(Routes.LOGIN) { inclusive = true }
-                    }
-                }
-            )
+            LoginScreen(navController)
+        }
+        composable(Routes.SIGNUP) {
+            SignupScreen(navController)
         }
 
+        // Profile
+        composable(Routes.PROFILE) {
+            ProfileScreen(navController)
+        }
+
+        // Upload
         composable(Routes.UPLOAD) {
-            UploadScreen(navController,
-                onLogout = {
-                    navController.navigate(Routes.LOGIN) {
-                        popUpTo(Routes.UPLOAD) { inclusive = true }
-                    }
-                }
-            )
+            UploadScreen(navController)
         }
 
-        composable(Routes.RESULTS) { ResultsScreen(navController) }
+        // Results (default)
+        composable(Routes.RESULTS) {
+            ResultsScreen(navController, matchHistoryId = null)
+        }
 
+        // Results (from history)
+        composable(
+            "results/{matchHistoryId}",
+            arguments = listOf(navArgument("matchHistoryId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val matchHistoryId = backStackEntry.arguments?.getLong("matchHistoryId")
+            ResultsScreen(navController, matchHistoryId)
+        }
+
+        // Job Detail
         composable(
             Routes.JOB_DETAIL,
             arguments = listOf(navArgument("jobId") { type = NavType.StringType })
@@ -58,6 +61,9 @@ fun RoleCallNavGraph(navController: NavHostController) {
             JobDetailScreen(navController, jobId)
         }
 
-        composable(Routes.HISTORY) { HistoryScreen(navController) }
+        // History
+        composable(Routes.HISTORY) {
+            HistoryScreen(navController)
+        }
     }
 }

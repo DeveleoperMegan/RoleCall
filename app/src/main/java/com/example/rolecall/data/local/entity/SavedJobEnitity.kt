@@ -1,4 +1,5 @@
 package com.example.rolecall.data.local.entity
+
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -10,5 +11,6 @@ data class SavedJobEntity(
     val location: String,
     val description: String,
     val matchScore: Float,
+    val status: String = "saved",     // "saved", "applied", "interviewing", "offer"
     val dateSaved: Long = System.currentTimeMillis()
 )

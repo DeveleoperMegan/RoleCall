@@ -1,4 +1,5 @@
 package com.example.rolecall.data.local.dao
+
 import androidx.room.*
 import com.example.rolecall.data.local.entity.SavedJobEntity
 import kotlinx.coroutines.flow.Flow
@@ -15,6 +16,12 @@ interface SavedJobDao {
     @Query("SELECT * FROM saved_jobs ORDER BY dateSaved DESC")
     fun getAllSavedJobs(): Flow<List<SavedJobEntity>>
 
+    @Query("SELECT * FROM saved_jobs WHERE status = 'applied' ORDER BY dateSaved DESC")
+    fun getAppliedJobs(): Flow<List<SavedJobEntity>>
+
     @Query("SELECT EXISTS(SELECT 1 FROM saved_jobs WHERE jobId = :jobId)")
     fun isJobSaved(jobId: String): Flow<Boolean>
+
+    @Query("UPDATE saved_jobs SET status = :status WHERE jobId = :jobId")
+    suspend fun updateJobStatus(jobId: String, status: String)
 }

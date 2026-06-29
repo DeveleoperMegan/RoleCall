@@ -43,6 +43,12 @@ class JobDetailViewModel @Inject constructor(
             repository.deleteSavedJob(job)
         }
     }
+
+    fun applyToJob(job: JobItem) {
+        viewModelScope.launch {
+            repository.applyToJob(job)
+        }
+    }
 }
 
 @Composable
@@ -72,6 +78,8 @@ fun JobDetailScreen(navController: NavController, jobId: String) {
             "Team leadership background"
         )
     }
+
+    var applied by remember { mutableStateOf(false) }
 
     RoleCallScaffold(
         navController = navController,
@@ -152,19 +160,47 @@ fun JobDetailScreen(navController: NavController, jobId: String) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Button(
-                onClick = {
-                    if (isJobSaved) {
-                        viewModel.deleteJob(job)
-                    } else {
-                        viewModel.saveJob(job)
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isJobSaved) AccentSuccess else UiInteractive
-                )
+            // Save and Apply buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(if (isJobSaved) "✓ Saved" else "Save Job")
+                // Save button
+                Button(
+                    onClick = {
+                        if (isJobSaved) {
+                            viewModel.deleteJob(job)
+                        } else {
+                            viewModel.saveJob(job)
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isJobSaved) AccentSuccess else UiInteractive
+                    )
+                ) {
+                    Text(if (isJobSaved) "✓ Saved" else "Save Job")
+                }
+
+                // Apply button
+                Button(
+                    onClick = {
+                        if (!applied) {
+                            // Save first if not already saved
+                            if (!isJobSaved) {
+                                viewModel.saveJob(job)
+                            }
+                            viewModel.applyToJob(job)
+                            applied = true
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (applied) AccentSuccess else AccentAlert
+                    )
+                ) {
+                    Text(if (applied) "✓ Applied" else "Apply Now")
+                }
             }
         }
     }
