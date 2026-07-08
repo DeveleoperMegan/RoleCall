@@ -16,9 +16,9 @@ class ResumeRepository @Inject constructor(
     private val apiService: ResumeApiService
 ) {
 
-    suspend fun uploadPdf(file: File): Result<UploadResponse> {
+    suspend fun uploadFile(file: File, mimeType: String = "application/pdf"): Result<UploadResponse> {
         return try {
-            val requestBody = file.asRequestBody("application/pdf".toMediaTypeOrNull())
+            val requestBody = file.asRequestBody(mimeType.toMediaTypeOrNull())
             val part = MultipartBody.Part.createFormData("file", file.name, requestBody)
             val response = apiService.uploadResume(part)
 

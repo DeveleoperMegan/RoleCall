@@ -15,7 +15,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
-import com.example.rolecall.data.mock.MockData
 import com.example.rolecall.data.model.JobItem
 import com.example.rolecall.data.repository.JobRepository
 import com.example.rolecall.ui.components.JobCard
@@ -43,6 +42,12 @@ class ResultsViewModel @Inject constructor(
     fun deleteJob(job: JobItem) {
         viewModelScope.launch { repository.deleteSavedJob(job) }
     }
+
+    fun recordMatch(resumeId: Long, jobId: String, score: Double) {
+        viewModelScope.launch {
+            repository.recordMatch(resumeId, jobId, score)
+        }
+    }
 }
 
 @Composable
@@ -59,14 +64,30 @@ fun ResultsScreen(
 
     var localSearchQuery by remember { mutableStateOf(searchQuery) }
 
-    val allJobs = remember { MockData.getMockJobs() }
+    // Get match results from the shared ViewModel or navigation
+    val matchResults = remember {
+        navController.previousBackStackEntry
+            ?.savedStateHandle
+            ?.get<List<JobItem>>("matchResults") ?: emptyList()
+    }
 
-    val filteredJobs = remember(allJobs, localSearchQuery) {
-        if (localSearchQuery.isBlank()) allJobs
-        else allJobs.filter {
+    val filteredJobs = remember(matchResults, localSearchQuery) {
+        if (localSearchQuery.isBlank()) matchResults
+        else matchResults.filter {
             it.title.contains(localSearchQuery, ignoreCase = true) ||
                     it.company.contains(localSearchQuery, ignoreCase = true) ||
                     it.location.contains(localSearchQuery, ignoreCase = true)
+        }
+    }
+
+    // Record match history
+    LaunchedEffect(matchResults) {
+        matchResults.take(3).forEach { job ->
+            viewModel.recordMatch(
+                resumeId = 0L,
+                jobId = job.id,
+                score = (job.matchScore / 100.0)
+            )
         }
     }
 

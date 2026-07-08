@@ -6,10 +6,8 @@ import io.github.jan.supabase.auth.providers.builtin.Email
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-
 object AuthRepository {
-    // Register user with email and password
-    // Store JWT string on success
+
     suspend fun signUpWithEmail(emailInput: String, passwordInput: String, tokenManager: TokenManager): String? {
         return withContext(Dispatchers.IO) {
             try {
@@ -17,17 +15,11 @@ object AuthRepository {
                     email = emailInput
                     password = passwordInput
                 }
-
-                // Extract JWT
                 val jwt = SupabaseClient.client.auth.currentAccessTokenOrNull()
-
-                // Store JWT
                 if (jwt != null) {
                     tokenManager.saveJWT(jwt)
                 }
-
                 jwt
-
             } catch (e: Exception) {
                 e.printStackTrace()
                 null
@@ -35,8 +27,6 @@ object AuthRepository {
         }
     }
 
-    // Authenticate user with email and password
-    // Store JWT string on success
     suspend fun loginWithEmail(emailInput: String, passwordInput: String, tokenManager: TokenManager): String? {
         return withContext(Dispatchers.IO) {
             try {
@@ -44,17 +34,11 @@ object AuthRepository {
                     email = emailInput
                     password = passwordInput
                 }
-
-                // Extract JWT
                 val jwt = SupabaseClient.client.auth.currentAccessTokenOrNull()
-
-                // Store JWT
                 if (jwt != null) {
                     tokenManager.saveJWT(jwt)
                 }
-
                 jwt
-
             } catch (e: Exception) {
                 e.printStackTrace()
                 null
@@ -62,7 +46,32 @@ object AuthRepository {
         }
     }
 
-    // Sign out
+    suspend fun sendPasswordResetEmail(emailInput: String, tokenManager: TokenManager) {
+        withContext(Dispatchers.IO) {
+            try {
+                SupabaseClient.client.auth.resetPasswordForEmail(emailInput)
+                Log.i("SUPABASE", "Password reset email sent to $emailInput")
+            } catch (e: Exception) {
+                Log.e("SUPABASE", "Password reset error", e)
+                throw e
+            }
+        }
+    }
+
+    suspend fun changePassword(newPassword: String) {
+        withContext(Dispatchers.IO) {
+            try {
+                SupabaseClient.client.auth.updateUser {
+                    password = newPassword
+                }
+                Log.i("SUPABASE", "Password changed successfully")
+            } catch (e: Exception) {
+                Log.e("SUPABASE", "Password change error", e)
+                throw e
+            }
+        }
+    }
+
     suspend fun signOut(tokenManager: TokenManager) {
         withContext(Dispatchers.IO) {
             try {

@@ -9,28 +9,28 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.rolecall.R
 
-// ─────────── Fonts (local files) ───────────
-val HeadlineFont    = FontFamily(Font(R.font.balsamiq_sans, FontWeight.Bold))
-val SubHeadlineFont = FontFamily(Font(R.font.baloo_thambi2, FontWeight.SemiBold))
+// ─────────── Fonts ───────────
+val HeadlineFont    = FontFamily(Font(R.font.momo_trust_sans_bold, FontWeight.Bold))
+val SubHeadlineFont = FontFamily(Font(R.font.momo_trust_sans_semibold, FontWeight.SemiBold))
 val BodyFont        = FontFamily(Font(R.font.baloo_tamma2, FontWeight.Normal))
 
 // ─────────── Typography ───────────
 private val RoleCallTypography = Typography(
-    headlineLarge  = TextStyle(fontFamily = HeadlineFont,    fontWeight = FontWeight.Bold,     fontSize = 32.sp),
-    headlineMedium = TextStyle(fontFamily = HeadlineFont,    fontWeight = FontWeight.Bold,     fontSize = 28.sp),
-    headlineSmall  = TextStyle(fontFamily = HeadlineFont,    fontWeight = FontWeight.Bold,     fontSize = 24.sp),
-    titleLarge     = TextStyle(fontFamily = SubHeadlineFont, fontWeight = FontWeight.SemiBold, fontSize = 22.sp),
-    titleMedium    = TextStyle(fontFamily = SubHeadlineFont, fontWeight = FontWeight.SemiBold, fontSize = 16.sp),
-    titleSmall     = TextStyle(fontFamily = SubHeadlineFont, fontWeight = FontWeight.Medium,   fontSize = 14.sp),
-    bodyLarge      = TextStyle(fontFamily = BodyFont,        fontWeight = FontWeight.Normal,   fontSize = 16.sp),
-    bodyMedium     = TextStyle(fontFamily = BodyFont,        fontWeight = FontWeight.Normal,   fontSize = 14.sp),
-    bodySmall      = TextStyle(fontFamily = BodyFont,        fontWeight = FontWeight.Normal,   fontSize = 12.sp),
-    labelLarge     = TextStyle(fontFamily = BodyFont,        fontWeight = FontWeight.Medium,   fontSize = 14.sp),
-    labelMedium    = TextStyle(fontFamily = BodyFont,        fontWeight = FontWeight.Medium,   fontSize = 12.sp),
-    labelSmall     = TextStyle(fontFamily = BodyFont,        fontWeight = FontWeight.Medium,   fontSize = 11.sp),
+    headlineLarge  = TextStyle(fontFamily = HeadlineFont,    fontWeight = FontWeight.Bold,     fontSize = 32.sp, lineHeight = 40.sp),
+    headlineMedium = TextStyle(fontFamily = HeadlineFont,    fontWeight = FontWeight.Bold,     fontSize = 28.sp, lineHeight = 36.sp),
+    headlineSmall  = TextStyle(fontFamily = HeadlineFont,    fontWeight = FontWeight.Bold,     fontSize = 24.sp, lineHeight = 32.sp),
+    titleLarge     = TextStyle(fontFamily = SubHeadlineFont, fontWeight = FontWeight.SemiBold, fontSize = 22.sp, lineHeight = 28.sp),
+    titleMedium    = TextStyle(fontFamily = SubHeadlineFont, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 24.sp),
+    titleSmall     = TextStyle(fontFamily = SubHeadlineFont, fontWeight = FontWeight.Medium,   fontSize = 14.sp, lineHeight = 20.sp),
+    bodyLarge      = TextStyle(fontFamily = BodyFont,        fontWeight = FontWeight.Normal,   fontSize = 16.sp, lineHeight = 24.sp),
+    bodyMedium     = TextStyle(fontFamily = BodyFont,        fontWeight = FontWeight.Normal,   fontSize = 14.sp, lineHeight = 20.sp),
+    bodySmall      = TextStyle(fontFamily = BodyFont,        fontWeight = FontWeight.Normal,   fontSize = 12.sp, lineHeight = 16.sp),
+    labelLarge     = TextStyle(fontFamily = BodyFont,        fontWeight = FontWeight.Medium,   fontSize = 14.sp, lineHeight = 20.sp),
+    labelMedium    = TextStyle(fontFamily = BodyFont,        fontWeight = FontWeight.Medium,   fontSize = 12.sp, lineHeight = 16.sp),
+    labelSmall     = TextStyle(fontFamily = BodyFont,        fontWeight = FontWeight.Medium,   fontSize = 11.sp, lineHeight = 16.sp),
 )
 
-// ─────────── Color scheme (using constants from Color.kt) ───────────
+// ─────────── Color scheme ───────────
 private val RoleCallDarkColorScheme = darkColorScheme(
     primary            = UiInteractive,
     onPrimary          = androidx.compose.ui.graphics.Color.White,

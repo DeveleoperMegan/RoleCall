@@ -20,30 +20,21 @@ fun RoleCallNavGraph(navController: NavHostController) {
 
     NavHost(navController = navController, startDestination = startDestination) {
 
-        // Auth screens
         composable(Routes.LOGIN) {
             LoginScreen(navController)
         }
         composable(Routes.SIGNUP) {
             SignupScreen(navController)
         }
-
-        // Profile
         composable(Routes.PROFILE) {
             ProfileScreen(navController)
         }
-
-        // Upload
         composable(Routes.UPLOAD) {
             UploadScreen(navController)
         }
-
-        // Results (default)
         composable(Routes.RESULTS) {
             ResultsScreen(navController, matchHistoryId = null)
         }
-
-        // Results (from history)
         composable(
             "results/{matchHistoryId}",
             arguments = listOf(navArgument("matchHistoryId") { type = NavType.LongType })
@@ -51,8 +42,6 @@ fun RoleCallNavGraph(navController: NavHostController) {
             val matchHistoryId = backStackEntry.arguments?.getLong("matchHistoryId")
             ResultsScreen(navController, matchHistoryId)
         }
-
-        // Job Detail
         composable(
             Routes.JOB_DETAIL,
             arguments = listOf(navArgument("jobId") { type = NavType.StringType })
@@ -60,10 +49,20 @@ fun RoleCallNavGraph(navController: NavHostController) {
             val jobId = backStackEntry.arguments?.getString("jobId") ?: ""
             JobDetailScreen(navController, jobId)
         }
-
-        // History
         composable(Routes.HISTORY) {
             HistoryScreen(navController)
+        }
+        composable(Routes.FORGOT_PASSWORD) {
+            ForgotPasswordScreen(navController)
+        }
+        composable(Routes.CHANGE_PASSWORD) {
+            ChangePasswordScreen(navController)
+        }
+        composable(Routes.EDIT_PROFILE) {
+            EditProfileScreen(navController)
+        }
+        composable(Routes.NOTIFICATION_SETTINGS) {
+            NotificationSettingsScreen(navController)
         }
     }
 }

@@ -132,11 +132,15 @@ fun ProfileScreen(navController: NavController) {
                     Text("Settings", style = MaterialTheme.typography.titleMedium, color = PrimaryText)
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    TextButton(onClick = { /* TODO: Edit profile */ }) {
+                    TextButton(onClick = { navController.navigate(Routes.EDIT_PROFILE) }) {
                         Text("Edit Profile", color = UiInteractive)
                     }
 
-                    TextButton(onClick = { /* TODO: Notification settings */ }) {
+                    TextButton(onClick = { navController.navigate(Routes.CHANGE_PASSWORD) }) {
+                        Text("Change Password", color = UiInteractive)
+                    }
+
+                    TextButton(onClick = { navController.navigate(Routes.NOTIFICATION_SETTINGS) }) {
                         Text("Notifications", color = UiInteractive)
                     }
                 }

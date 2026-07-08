@@ -80,6 +80,14 @@ fun LoginScreen(navController: NavController) {
                 )
             )
 
+            // Forgot Password link
+            TextButton(
+                onClick = { navController.navigate(Routes.FORGOT_PASSWORD) },
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text("Forgot Password?", color = SecondaryText)
+            }
+
             if (uiState.errorMessage != null) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(uiState.errorMessage!!, color = MaterialTheme.colorScheme.error)
@@ -94,10 +102,7 @@ fun LoginScreen(navController: NavController) {
                 colors = ButtonDefaults.buttonColors(containerColor = UiInteractive)
             ) {
                 if (uiState.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = PrimaryText
-                    )
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = PrimaryText)
                 } else {
                     Text("Log In")
                 }
