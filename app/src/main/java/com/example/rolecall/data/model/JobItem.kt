@@ -14,5 +14,8 @@ data class JobItem(
     val title: String,
     val company: String,
     val location: String,
-    val matchScore: Float
+    val description: String = "",
+    val matchScore: Float,
+    val matchingPhrases: List<String> = emptyList(),
+    val keySkills: List<String> = emptyList()
 )

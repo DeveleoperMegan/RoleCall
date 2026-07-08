@@ -1,5 +1,7 @@
 package com.example.rolecall.data.repository
 
+import com.example.rolecall.data.remote.MatchRequest
+import com.example.rolecall.data.remote.MatchResponse
 import com.example.rolecall.data.remote.ResumeApiService
 import com.example.rolecall.data.remote.UploadResponse
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -28,7 +30,25 @@ class ResumeRepository @Inject constructor(
                     Result.failure(Exception("Empty response from server"))
                 }
             } else {
-                Result.failure(Exception("Upload failed: ${response.code()} ${response.message()}"))
+                Result.failure(Exception("Upload failed: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun matchResume(resumeText: String): Result<MatchResponse> {
+        return try {
+            val response = apiService.matchResume(MatchRequest(resumeText))
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (body != null) {
+                    Result.success(body)
+                } else {
+                    Result.failure(Exception("Empty response from server"))
+                }
+            } else {
+                Result.failure(Exception("Match failed: ${response.code()}"))
             }
         } catch (e: Exception) {
             Result.failure(e)
