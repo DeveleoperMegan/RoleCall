@@ -42,7 +42,7 @@ object AppModule {
     @Singleton
     fun provideRetrofit(): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8000")
+            .baseUrl("https://rolecallbackend-production.up.railway.app/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
