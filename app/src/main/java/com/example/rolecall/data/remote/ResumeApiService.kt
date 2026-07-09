@@ -1,7 +1,6 @@
 package com.example.rolecall.data.remote
 
 import okhttp3.MultipartBody
-import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -39,12 +38,12 @@ data class MatchingPhrase(
 interface ResumeApiService {
 
     @Multipart
-    @POST("/upload/resume")
+    @POST("/api/v1/upload/resume")
     suspend fun uploadResume(
         @Part file: MultipartBody.Part
     ): Response<UploadResponse>
 
-    @POST("/match")
+    @POST("/api/v1/match")
     suspend fun matchResume(
         @Body request: MatchRequest
     ): Response<MatchResponse>

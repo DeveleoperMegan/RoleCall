@@ -1,5 +1,6 @@
 package com.example.rolecall.ui.screens
 
+import android.Manifest
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,7 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -114,8 +115,18 @@ fun UploadScreen(navController: NavController) {
     var selectedFile by remember { mutableStateOf<File?>(null) }
     var showCamera by remember { mutableStateOf(false) }
 
-    // Camera controller
     val cameraController = remember { LifecycleCameraController(context) }
+
+    // Camera permission launcher
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            cameraController.bindToLifecycle(lifecycleOwner)
+            cameraController.cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+            showCamera = true
+        }
+    }
 
     // PDF picker
     val pdfPickerLauncher = rememberLauncherForActivityResult(
@@ -124,13 +135,27 @@ fun UploadScreen(navController: NavController) {
         uri?.let {
             val fileName = getFileName(context, it)
             selectedFileName = fileName
-
             val inputStream = context.contentResolver.openInputStream(it)
             val tempFile = File(context.cacheDir, fileName ?: "resume.pdf")
             inputStream?.use { input ->
-                tempFile.outputStream().use { output ->
-                    input.copyTo(output)
-                }
+                tempFile.outputStream().use { output -> input.copyTo(output) }
+            }
+            selectedFile = tempFile
+            showCamera = false
+        }
+    }
+
+    // Image gallery picker
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let {
+            val fileName = getFileName(context, it)
+            selectedFileName = fileName
+            val inputStream = context.contentResolver.openInputStream(it)
+            val tempFile = File(context.cacheDir, fileName ?: "resume_photo.jpg")
+            inputStream?.use { input ->
+                tempFile.outputStream().use { output -> input.copyTo(output) }
             }
             selectedFile = tempFile
             showCamera = false
@@ -145,7 +170,6 @@ fun UploadScreen(navController: NavController) {
         if (showCamera) {
             // Camera preview screen
             Column(modifier = modifier.fillMaxSize()) {
-                // Camera preview
                 AndroidView(
                     factory = { ctx ->
                         PreviewView(ctx).apply {
@@ -159,7 +183,6 @@ fun UploadScreen(navController: NavController) {
                         .fillMaxWidth()
                 )
 
-                // Capture button
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = FoundationDark,
@@ -172,7 +195,6 @@ fun UploadScreen(navController: NavController) {
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Cancel
                         TextButton(
                             onClick = {
                                 showCamera = false
@@ -184,7 +206,6 @@ fun UploadScreen(navController: NavController) {
 
                         Spacer(modifier = Modifier.weight(1f))
 
-                        // Capture
                         Button(
                             onClick = {
                                 val photoFile = File(
@@ -203,6 +224,7 @@ fun UploadScreen(navController: NavController) {
 
                                         override fun onError(exception: ImageCaptureException) {
                                             selectedFileName = "Capture failed"
+                                            showCamera = false
                                         }
                                     }
                                 )
@@ -212,8 +234,6 @@ fun UploadScreen(navController: NavController) {
                         }
 
                         Spacer(modifier = Modifier.weight(1f))
-
-                        // Spacer for symmetry
                         Spacer(modifier = Modifier.width(64.dp))
                     }
                 }
@@ -242,11 +262,17 @@ fun UploadScreen(navController: NavController) {
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Button(onClick = {
-                    cameraController.bindToLifecycle(lifecycleOwner)
-                    cameraController.cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-                    showCamera = true
+                    cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                 }) {
                     Text("Take Photo")
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedButton(onClick = {
+                    imagePickerLauncher.launch(arrayOf("image/*"))
+                }) {
+                    Text("Choose from Gallery")
                 }
 
                 selectedFileName?.let {
@@ -262,9 +288,12 @@ fun UploadScreen(navController: NavController) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = {
-                            val mimeType = if (selectedFile?.name?.endsWith(".jpg") == true ||
-                                selectedFile?.name?.endsWith(".jpeg") == true
-                            ) "image/jpeg" else "application/pdf"
+                            val mimeType = when {
+                                selectedFile?.name?.endsWith(".jpg") == true -> "image/jpeg"
+                                selectedFile?.name?.endsWith(".jpeg") == true -> "image/jpeg"
+                                selectedFile?.name?.endsWith(".png") == true -> "image/png"
+                                else -> "application/pdf"
+                            }
                             viewModel.uploadFile(selectedFile!!, mimeType)
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = AccentSuccess)
@@ -328,6 +357,5 @@ private fun getFileName(context: android.content.Context, uri: Uri): String? {
             name = cursor.getString(nameIndex)
         }
     }
-    return name ?: "resume.pdf"
+    return name ?: "document"
 }
-
