@@ -45,15 +45,9 @@ class JobDetailViewModel @Inject constructor(
 }
 
 @Composable
-fun JobDetailScreen(navController: NavController, jobId: String) {
+fun JobDetailScreen(navController: NavController, job: JobItem?) {
     val viewModel: JobDetailViewModel = hiltViewModel()
     val savedJobs by viewModel.savedJobs.collectAsState()
-
-    // Get job from saved state handle
-    val job = navController.previousBackStackEntry
-        ?.savedStateHandle
-        ?.get<List<JobItem>>("matchResults")
-        ?.find { it.id == jobId }
 
     if (job == null) {
         RoleCallScaffold(navController = navController) { modifier ->
@@ -81,7 +75,9 @@ fun JobDetailScreen(navController: NavController, jobId: String) {
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(job.company, style = MaterialTheme.typography.titleMedium, color = SecondaryText)
-            Text(job.location, style = MaterialTheme.typography.bodyMedium, color = SecondaryText)
+            if (job.location.isNotBlank()) {
+                Text(job.location, style = MaterialTheme.typography.bodyMedium, color = SecondaryText)
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -99,43 +95,41 @@ fun JobDetailScreen(navController: NavController, jobId: String) {
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            if (job.matchingPhrases.isNotEmpty()) {
-                Text(
-                    "Why this match?",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = PrimaryText
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                job.matchingPhrases.forEach { phrase ->
-                    Text(
-                        "• $phrase",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = SecondaryText,
-                        modifier = Modifier.padding(start = 8.dp, top = 2.dp, bottom = 2.dp)
-                    )
+            if (job.minSalary != null || job.maxSalary != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                val salaryText = buildString {
+                    if (job.minSalary != null && job.maxSalary != null) {
+                        append("$${job.minSalary.toLong()} - $${job.maxSalary.toLong()}")
+                    } else if (job.minSalary != null) {
+                        append("From $${job.minSalary.toLong()}")
+                    } else if (job.maxSalary != null) {
+                        append("Up to $${job.maxSalary.toLong()}")
+                    }
                 }
-                Spacer(modifier = Modifier.height(24.dp))
+                Text("Salary: $salaryText", style = MaterialTheme.typography.titleMedium, color = AccentSuccess)
             }
 
-            Text(
-                "Full Description",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = PrimaryText
-            )
+            if (job.postDate != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text("Posted: ${job.postDate}", style = MaterialTheme.typography.bodySmall, color = SecondaryText)
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text("Full Description", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = PrimaryText)
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                job.description.ifBlank {
-                    "We are seeking a skilled ${job.title} to join our growing team. " +
-                            "The ideal candidate has a strong background in mobile development " +
-                            "and a passion for building intuitive user experiences."
-                },
+                job.description.ifBlank { "No description provided." },
                 style = MaterialTheme.typography.bodyMedium,
                 color = SecondaryText
             )
+
+            if (job.postUrl != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                TextButton(onClick = { /* Open in browser */ }) {
+                    Text("View Original Posting", color = UiInteractive)
+                }
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -145,8 +139,7 @@ fun JobDetailScreen(navController: NavController, jobId: String) {
             ) {
                 Button(
                     onClick = {
-                        if (isJobSaved) viewModel.deleteJob(job)
-                        else viewModel.saveJob(job)
+                        if (isJobSaved) viewModel.deleteJob(job) else viewModel.saveJob(job)
                     },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(

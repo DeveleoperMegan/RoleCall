@@ -6,9 +6,7 @@ import com.example.rolecall.data.local.AppDatabase
 import com.example.rolecall.data.local.dao.MatchHistoryDao
 import com.example.rolecall.data.local.dao.ResumeDao
 import com.example.rolecall.data.local.dao.SavedJobDao
-import com.example.rolecall.data.remote.ResumeApiService
 import com.example.rolecall.data.repository.JobRepository
-import com.example.rolecall.data.repository.ResumeRepository
 import com.example.rolecall.network.FastAPIRepository
 import com.example.rolecall.network.TokenManager
 import dagger.Module
@@ -16,15 +14,26 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
+
+// ──────────────────────────────────────────────────────────────────────────────
+// AppModule
+// Hilt dependency injection module. Provides singleton instances of:
+//   - TokenManager (stores/retrieves JWT in EncryptedSharedPreferences)
+//   - FastAPIRepository (Ktor-based HTTP client with Bearer auth)
+//   - Room database and all DAOs
+//   - JobRepository (local DB operations)
+//
+// Note: There is no Retrofit or OkHttp here. All networking goes through
+// FastAPIRepository which uses the Ktor client from ApiClient. That client
+// already has the auth plugin configured to send the JWT as a Bearer token.
+// ──────────────────────────────────────────────────────────────────────────────
 
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
-    // ── Networking ──
+    // ── Networking ───────────────────────────────────────────────────────────
 
     @Provides
     @Singleton
@@ -38,28 +47,7 @@ object AppModule {
         return FastAPIRepository(tokenManager)
     }
 
-    @Provides
-    @Singleton
-    fun provideRetrofit(): Retrofit {
-        return Retrofit.Builder()
-            .baseUrl("https://rolecallbackend-production.up.railway.app/")
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-    }
-
-    @Provides
-    @Singleton
-    fun provideResumeApiService(retrofit: Retrofit): ResumeApiService {
-        return retrofit.create(ResumeApiService::class.java)
-    }
-
-    @Provides
-    @Singleton
-    fun provideResumeRepository(apiService: ResumeApiService): ResumeRepository {
-        return ResumeRepository(apiService)
-    }
-
-    // ── Room Database ──
+    // ── Room Database ────────────────────────────────────────────────────────
 
     @Provides
     @Singleton

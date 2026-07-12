@@ -9,7 +9,9 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.example.rolecall.data.model.JobItem
 import com.example.rolecall.ui.screens.*
+import com.google.gson.Gson
 
 @Composable
 fun RoleCallNavGraph(navController: NavHostController) {
@@ -43,26 +45,19 @@ fun RoleCallNavGraph(navController: NavHostController) {
             ResultsScreen(navController, matchHistoryId)
         }
         composable(
-            Routes.JOB_DETAIL,
-            arguments = listOf(navArgument("jobId") { type = NavType.StringType })
+            "job_detail/{jobJson}",
+            arguments = listOf(navArgument("jobJson") { type = NavType.StringType })
         ) { backStackEntry ->
-            val jobId = backStackEntry.arguments?.getString("jobId") ?: ""
-            JobDetailScreen(navController, jobId)
+            val jobJson = backStackEntry.arguments?.getString("jobJson") ?: ""
+            val job = try {
+                Gson().fromJson(jobJson, JobItem::class.java)
+            } catch (e: Exception) {
+                null
+            }
+            JobDetailScreen(navController, job)
         }
         composable(Routes.HISTORY) {
             HistoryScreen(navController)
-        }
-        composable(Routes.FORGOT_PASSWORD) {
-            ForgotPasswordScreen(navController)
-        }
-        composable(Routes.CHANGE_PASSWORD) {
-            ChangePasswordScreen(navController)
-        }
-        composable(Routes.EDIT_PROFILE) {
-            EditProfileScreen(navController)
-        }
-        composable(Routes.NOTIFICATION_SETTINGS) {
-            NotificationSettingsScreen(navController)
         }
     }
 }

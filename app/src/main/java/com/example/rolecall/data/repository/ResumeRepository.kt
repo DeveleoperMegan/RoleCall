@@ -1,8 +1,8 @@
 package com.example.rolecall.data.repository
 
-import com.example.rolecall.data.remote.MatchRequest
-import com.example.rolecall.data.remote.MatchResponse
+import com.example.rolecall.data.remote.JobPostingsPage
 import com.example.rolecall.data.remote.ResumeApiService
+import com.example.rolecall.data.remote.SearchResponse
 import com.example.rolecall.data.remote.UploadResponse
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -37,9 +37,9 @@ class ResumeRepository @Inject constructor(
         }
     }
 
-    suspend fun matchResume(resumeText: String): Result<MatchResponse> {
+    suspend fun searchJobs(resumeId: String, after: String? = null): Result<SearchResponse> {
         return try {
-            val response = apiService.matchResume(MatchRequest(resumeText))
+            val response = apiService.searchJobs(resumeId, after)
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null) {
@@ -48,7 +48,25 @@ class ResumeRepository @Inject constructor(
                     Result.failure(Exception("Empty response from server"))
                 }
             } else {
-                Result.failure(Exception("Match failed: ${response.code()}"))
+                Result.failure(Exception("Search failed: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun browseJobs(after: String? = null): Result<JobPostingsPage> {
+        return try {
+            val response = apiService.browseJobs(after)
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (body != null) {
+                    Result.success(body)
+                } else {
+                    Result.failure(Exception("Empty response from server"))
+                }
+            } else {
+                Result.failure(Exception("Browse failed: ${response.code()}"))
             }
         } catch (e: Exception) {
             Result.failure(e)

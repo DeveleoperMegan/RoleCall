@@ -10,6 +10,6 @@ object Routes {
     const val PROFILE = "profile"
     const val UPLOAD = "upload"
     const val RESULTS = "results"
-    const val JOB_DETAIL = "job_detail/{jobId}"
+    const val JOB_DETAIL = "job_detail/{jobJson}"   // now uses JSON
     const val HISTORY = "history"
 }

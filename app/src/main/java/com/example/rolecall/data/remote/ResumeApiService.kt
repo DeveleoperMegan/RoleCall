@@ -5,46 +5,52 @@ import retrofit2.Response
 import retrofit2.http.*
 
 data class UploadResponse(
-    val success: Boolean,
-    val message: String,
-    val extractedText: String? = null,
-    val filename: String? = null
+    val resume_id: String,
+    val filename: String,
+    val text_length: Int
 )
 
-data class MatchRequest(
-    val resume_text: String
-)
-
-data class MatchResponse(
-    val matches: List<MatchResult>
-)
-
-data class MatchResult(
-    val jobId: String,
+data class JobPostingResult(
+    val id: String,
+    val job_id: Int?,
+    val company_name: String?,
     val title: String,
-    val company: String,
-    val location: String,
     val description: String,
-    val score: Double,
-    val matchingPhrases: List<MatchingPhrase>? = null,
-    val keySkills: List<String>? = null
+    val max_salary: Double?,
+    val min_salary: Double?,
+    val post_date: String?,
+    val post_url: String?,
+    val expiration_date: String?,
+    val similarity: Double
 )
 
-data class MatchingPhrase(
-    val text: String,
-    val weight: Double
+data class SearchResponse(
+    val resume_id: String,
+    val matches: List<JobPostingResult>
+)
+
+data class JobPostingsPage(
+    val items: List<JobPostingResult>,
+    val next_page_index: String?,
+    val has_next: Boolean
 )
 
 interface ResumeApiService {
 
     @Multipart
-    @POST("/api/v1/upload/resume")
+    @POST("/api/v1/resumes/upload")
     suspend fun uploadResume(
         @Part file: MultipartBody.Part
     ): Response<UploadResponse>
 
-    @POST("/api/v1/match")
-    suspend fun matchResume(
-        @Body request: MatchRequest
-    ): Response<MatchResponse>
+    @GET("/api/v1/search/job_postings")
+    suspend fun searchJobs(
+        @Query("resume_id") resumeId: String,
+        @Query("after") after: String? = null
+    ): Response<SearchResponse>
+
+    @GET("/api/v1/search/job_postings")
+    suspend fun browseJobs(
+        @Query("after") after: String? = null
+    ): Response<JobPostingsPage>
 }

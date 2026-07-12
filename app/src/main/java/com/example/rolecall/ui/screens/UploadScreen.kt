@@ -2,6 +2,7 @@ package com.example.rolecall.ui.screens
 
 import android.Manifest
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -22,88 +23,158 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
-import com.example.rolecall.data.remote.MatchResponse
-import com.example.rolecall.data.remote.UploadResponse
-import com.example.rolecall.data.repository.ResumeRepository
+import com.example.rolecall.data.model.JobItem
 import com.example.rolecall.navigation.Routes
+import com.example.rolecall.network.FastAPIRepository
 import com.example.rolecall.ui.components.RoleCallScaffold
 import com.example.rolecall.ui.theme.*
+import com.google.gson.Gson
+import com.google.gson.annotations.SerializedName
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 
+// ──────────────────────────────────────────────────────────────────────────────
+// JSON response models (must match backend exactly)
+// ──────────────────────────────────────────────────────────────────────────────
+
+data class UploadJsonResponse(
+    @SerializedName("resume_id") val resumeId: String,
+    val filename: String,
+    @SerializedName("text_length") val textLength: Int
+)
+
+data class SearchJsonResponse(
+    @SerializedName("resume_id") val resumeId: String?,
+    @SerializedName("matches") val matches: List<MatchJsonItem>?
+)
+
+data class MatchJsonItem(
+    val id: String,
+    @SerializedName("job_id") val jobId: Long?,
+    @SerializedName("company_name") val companyName: String?,
+    val title: String,
+    val description: String,
+    @SerializedName("max_salary") val maxSalary: Double?,
+    @SerializedName("min_salary") val minSalary: Double?,
+    @SerializedName("post_date") val postDate: String?,
+    @SerializedName("post_url") val postUrl: String?,
+    @SerializedName("expiration_date") val expirationDate: String?,
+    val similarity: Double
+)
+
+// ──────────────────────────────────────────────────────────────────────────────
+// UploadViewModel – orchestrates upload → search → results
+// ──────────────────────────────────────────────────────────────────────────────
+
 @HiltViewModel
 class UploadViewModel @Inject constructor(
-    private val resumeRepository: ResumeRepository
+    private val fastAPIRepository: FastAPIRepository
 ) : ViewModel() {
 
     var uploadState by mutableStateOf<UploadUiState>(UploadUiState.Idle)
         private set
-
     var matchState by mutableStateOf<MatchUiState>(MatchUiState.Idle)
         private set
 
-    private var extractedText: String? = null
+    private val gson = Gson()
 
-    fun uploadFile(file: File, mimeType: String = "application/pdf") {
+    fun uploadAndSearch(file: File, mimeType: String, navController: NavController) {
         viewModelScope.launch {
+            // ── Upload phase ────────────────────────────────────────────────
             uploadState = UploadUiState.Loading
-            val result = resumeRepository.uploadFile(file, mimeType)
-            result.fold(
-                onSuccess = { response ->
-                    extractedText = response.extractedText
-                    uploadState = UploadUiState.Success(response)
-                },
-                onFailure = { error ->
-                    uploadState = UploadUiState.Error(error.localizedMessage ?: "Upload failed")
-                }
-            )
-        }
-    }
 
-    fun matchAndNavigate(navController: NavController) {
-        val text = extractedText ?: return
-        viewModelScope.launch {
+            val uploadJson = withContext(Dispatchers.IO) {
+                fastAPIRepository.uploadResume(file, mimeType)
+            }
+
+            if (uploadJson == null) {
+                uploadState = UploadUiState.Error("Upload failed")
+                return@launch
+            }
+
+            val uploadResponse = gson.fromJson(uploadJson, UploadJsonResponse::class.java)
+            uploadState = UploadUiState.Success(uploadResponse.filename, uploadResponse.textLength)
+
+            // ── Search phase ────────────────────────────────────────────────
             matchState = MatchUiState.Loading
-            val result = resumeRepository.matchResume(text)
-            result.fold(
-                onSuccess = { response ->
-                    matchState = MatchUiState.Success(response)
-                    navController.navigate(Routes.RESULTS) {
-                        popUpTo(Routes.UPLOAD) { inclusive = false }
-                    }
-                },
-                onFailure = { error ->
-                    matchState = MatchUiState.Error(error.localizedMessage ?: "Match failed")
-                }
-            )
-        }
-    }
+            val searchJson = withContext(Dispatchers.IO) {
+                fastAPIRepository.searchJobs(uploadResponse.resumeId)
+            }
 
-    fun resetState() {
-        uploadState = UploadUiState.Idle
-        matchState = MatchUiState.Idle
-        extractedText = null
+            Log.i("UPLOAD_DEBUG", "Search JSON: $searchJson")
+
+            if (searchJson == null) {
+                matchState = MatchUiState.Error("Search failed")
+                return@launch
+            }
+
+            val searchResponse = try {
+                gson.fromJson(searchJson, SearchJsonResponse::class.java)
+            } catch (e: Exception) {
+                Log.e("UPLOAD_DEBUG", "Parse error: ${e.message}")
+                matchState = MatchUiState.Error("Failed to parse results")
+                return@launch
+            }
+
+            // 🔍 Debug: verify parsed data
+            Log.i("UPLOAD_DEBUG", "Parsed resumeId: ${searchResponse.resumeId}, matches count: ${searchResponse.matches?.size ?: 0}")
+
+            // matches can be null → default to empty list
+            val matchList = searchResponse.matches ?: emptyList()
+            Log.i("UPLOAD_DEBUG", "Final match list size: ${matchList.size}")
+
+            // Convert backend models to UI model
+            val jobs = matchList.map { match ->
+                Log.i("UPLOAD_DEBUG", "Match: ${match.title}, similarity: ${match.similarity}")
+                JobItem(
+                    id = match.id,
+                    title = match.title,
+                    company = match.companyName ?: "Unknown",
+                    location = "",
+                    description = match.description,
+                    matchScore = (match.similarity * 100).toFloat(),
+                    maxSalary = match.maxSalary,
+                    minSalary = match.minSalary,
+                    postDate = match.postDate,
+                    postUrl = match.postUrl
+                )
+            }
+
+            matchState = MatchUiState.Success(jobs.size)
+
+            // Store in shared holder
+            MatchResultsHolder.setResults(jobs)
+
+            navController.navigate(Routes.RESULTS) {
+                popUpTo(Routes.UPLOAD) { inclusive = false }
+            }
+        }
     }
 }
 
+// ── UI state classes ─────────────────────────────────────────────────────────
 sealed class UploadUiState {
     data object Idle : UploadUiState()
     data object Loading : UploadUiState()
-    data class Success(val response: UploadResponse) : UploadUiState()
+    data class Success(val filename: String, val textLength: Int) : UploadUiState()
     data class Error(val message: String) : UploadUiState()
 }
 
 sealed class MatchUiState {
     data object Idle : MatchUiState()
     data object Loading : MatchUiState()
-    data class Success(val response: MatchResponse) : MatchUiState()
+    data class Success(val matchCount: Int) : MatchUiState()
     data class Error(val message: String) : MatchUiState()
 }
+
+// ── UploadScreen composable ──────────────────────────────────────────────────
 
 @Composable
 fun UploadScreen(navController: NavController) {
@@ -117,7 +188,6 @@ fun UploadScreen(navController: NavController) {
 
     val cameraController = remember { LifecycleCameraController(context) }
 
-    // Camera permission launcher
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -128,7 +198,6 @@ fun UploadScreen(navController: NavController) {
         }
     }
 
-    // PDF picker
     val pdfPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
@@ -137,15 +206,12 @@ fun UploadScreen(navController: NavController) {
             selectedFileName = fileName
             val inputStream = context.contentResolver.openInputStream(it)
             val tempFile = File(context.cacheDir, fileName ?: "resume.pdf")
-            inputStream?.use { input ->
-                tempFile.outputStream().use { output -> input.copyTo(output) }
-            }
+            inputStream?.use { input -> tempFile.outputStream().use { output -> input.copyTo(output) } }
             selectedFile = tempFile
             showCamera = false
         }
     }
 
-    // Image gallery picker
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
@@ -154,9 +220,7 @@ fun UploadScreen(navController: NavController) {
             selectedFileName = fileName
             val inputStream = context.contentResolver.openInputStream(it)
             val tempFile = File(context.cacheDir, fileName ?: "resume_photo.jpg")
-            inputStream?.use { input ->
-                tempFile.outputStream().use { output -> input.copyTo(output) }
-            }
+            inputStream?.use { input -> tempFile.outputStream().use { output -> input.copyTo(output) } }
             selectedFile = tempFile
             showCamera = false
         }
@@ -168,7 +232,6 @@ fun UploadScreen(navController: NavController) {
         showSearchBar = false
     ) { modifier ->
         if (showCamera) {
-            // Camera preview screen
             Column(modifier = modifier.fillMaxSize()) {
                 AndroidView(
                     factory = { ctx ->
@@ -178,128 +241,82 @@ fun UploadScreen(navController: NavController) {
                             cameraController.cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
                         }
                     },
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
+                    modifier = Modifier.weight(1f).fillMaxWidth()
                 )
-
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = FoundationDark,
-                    shadowElevation = 8.dp
-                ) {
+                Surface(modifier = Modifier.fillMaxWidth(), color = FoundationDark, shadowElevation = 8.dp) {
                     Row(
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .fillMaxWidth(),
+                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        TextButton(
-                            onClick = {
-                                showCamera = false
-                                cameraController.unbind()
-                            }
-                        ) {
+                        TextButton(onClick = { showCamera = false; cameraController.unbind() }) {
                             Text("Cancel", color = AccentAlert)
                         }
-
                         Spacer(modifier = Modifier.weight(1f))
-
-                        Button(
-                            onClick = {
-                                val photoFile = File(
-                                    context.cacheDir,
-                                    "resume_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())}.jpg"
-                                )
-                                cameraController.takePicture(
-                                    ImageCapture.OutputFileOptions.Builder(photoFile).build(),
-                                    context.mainExecutor,
-                                    object : ImageCapture.OnImageSavedCallback {
-                                        override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                                            selectedFileName = photoFile.name
-                                            selectedFile = photoFile
-                                            showCamera = false
-                                        }
-
-                                        override fun onError(exception: ImageCaptureException) {
-                                            selectedFileName = "Capture failed"
-                                            showCamera = false
-                                        }
+                        Button(onClick = {
+                            val photoFile = File(
+                                context.cacheDir,
+                                "resume_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())}.jpg"
+                            )
+                            cameraController.takePicture(
+                                ImageCapture.OutputFileOptions.Builder(photoFile).build(),
+                                context.mainExecutor,
+                                object : ImageCapture.OnImageSavedCallback {
+                                    override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                                        selectedFileName = photoFile.name
+                                        selectedFile = photoFile
+                                        showCamera = false
                                     }
-                                )
-                            }
-                        ) {
-                            Text("Capture")
-                        }
-
+                                    override fun onError(exception: ImageCaptureException) {
+                                        selectedFileName = "Capture failed"
+                                        showCamera = false
+                                    }
+                                }
+                            )
+                        }) { Text("Capture") }
                         Spacer(modifier = Modifier.weight(1f))
                         Spacer(modifier = Modifier.width(64.dp))
                     }
                 }
             }
         } else {
-            // Upload screen
             Column(
                 modifier = modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(
-                    "Welcome to RoleCall",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = PrimaryText
-                )
-
+                Text("Welcome to RoleCall", style = MaterialTheme.typography.headlineMedium, color = PrimaryText)
                 Spacer(modifier = Modifier.height(32.dp))
 
-                Button(onClick = {
-                    pdfPickerLauncher.launch(arrayOf("application/pdf"))
-                }) {
-                    Text("Upload PDF")
-                }
-
+                Button(onClick = { pdfPickerLauncher.launch(arrayOf("application/pdf")) }) { Text("Upload PDF") }
                 Spacer(modifier = Modifier.height(12.dp))
-
-                Button(onClick = {
-                    cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-                }) {
-                    Text("Take Photo")
-                }
-
+                Button(onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) }) { Text("Take Photo") }
                 Spacer(modifier = Modifier.height(12.dp))
-
-                OutlinedButton(onClick = {
-                    imagePickerLauncher.launch(arrayOf("image/*"))
-                }) {
-                    Text("Choose from Gallery")
+                OutlinedButton(onClick = { imagePickerLauncher.launch(arrayOf("image/*")) }) {
+                    Text("Choose Photo (PDF works best)")
                 }
 
                 selectedFileName?.let {
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        "Selected: $it",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = PrimaryText
-                    )
+                    Text("Selected: $it", style = MaterialTheme.typography.bodyMedium, color = PrimaryText)
                 }
 
-                if (selectedFile != null && viewModel.uploadState !is UploadUiState.Loading) {
+                if (selectedFile != null && viewModel.uploadState !is UploadUiState.Loading && viewModel.matchState !is MatchUiState.Loading) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = {
                             val mimeType = when {
-                                selectedFile?.name?.endsWith(".jpg") == true -> "image/jpeg"
-                                selectedFile?.name?.endsWith(".jpeg") == true -> "image/jpeg"
+                                selectedFile?.name?.endsWith(".jpg") == true -> "image/jpg"
+                                selectedFile?.name?.endsWith(".jpeg") == true -> "image/jpg"
                                 selectedFile?.name?.endsWith(".png") == true -> "image/png"
+                                selectedFile?.name?.endsWith(".webp") == true -> "image/webp"
+                                selectedFile?.name?.endsWith(".txt") == true -> "text/plain"
                                 else -> "application/pdf"
                             }
-                            viewModel.uploadFile(selectedFile!!, mimeType)
+                            viewModel.uploadAndSearch(selectedFile!!, mimeType, navController)
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = AccentSuccess)
-                    ) {
-                        Text("Upload to Server")
-                    }
+                    ) { Text("Upload and Find Jobs") }
                 }
 
                 when (val state = viewModel.uploadState) {
@@ -309,18 +326,8 @@ fun UploadScreen(navController: NavController) {
                         Text("Uploading...", color = PrimaryText)
                     }
                     is UploadUiState.Success -> {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(state.response.message, color = AccentSuccess)
-
-                        if (viewModel.matchState !is MatchUiState.Loading) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Button(
-                                onClick = { viewModel.matchAndNavigate(navController) },
-                                colors = ButtonDefaults.buttonColors(containerColor = UiInteractive)
-                            ) {
-                                Text("Find Matching Jobs")
-                            }
-                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Uploaded! (${state.textLength} chars)", color = AccentSuccess)
                     }
                     is UploadUiState.Error -> {
                         Spacer(modifier = Modifier.height(16.dp))
@@ -333,13 +340,16 @@ fun UploadScreen(navController: NavController) {
                     is MatchUiState.Loading -> {
                         Spacer(modifier = Modifier.height(8.dp))
                         CircularProgressIndicator()
-                        Text("Matching...", color = PrimaryText)
+                        Text("Finding matches...", color = PrimaryText)
+                    }
+                    is MatchUiState.Success -> {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Found ${state.matchCount} matches!", color = AccentSuccess)
                     }
                     is MatchUiState.Error -> {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(state.message, color = AccentAlert)
                     }
-                    is MatchUiState.Success -> {}
                     is MatchUiState.Idle -> {}
                 }
 
@@ -349,6 +359,7 @@ fun UploadScreen(navController: NavController) {
     }
 }
 
+// ── Helper: get file name from content URI ───────────────────────────────────
 private fun getFileName(context: android.content.Context, uri: Uri): String? {
     var name: String? = null
     context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
