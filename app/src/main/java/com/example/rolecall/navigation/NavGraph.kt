@@ -17,14 +17,18 @@ import java.nio.charset.StandardCharsets
 import com.example.rolecall.ui.screens.ResumeListScreen
 
 @Composable
-fun RoleCallNavGraph(navController: NavHostController) {
+fun RoleCallNavGraph(
+    navController: NavHostController,
+    startRouteOverride: String? = null
+) {
     val authViewModel: AuthViewModel = hiltViewModel()
     val uiState by authViewModel.uiState.collectAsState()
 
-    val startDestination = if (uiState.isLoggedIn) Routes.UPLOAD else Routes.LOGIN
+    val defaultStart = if (uiState.isLoggedIn) Routes.UPLOAD else Routes.LOGIN
+    val startDestination = startRouteOverride ?: defaultStart
 
     NavHost(navController = navController, startDestination = startDestination) {
-
+        composable(Routes.ONBOARDING) { OnboardingScreen(navController) }
         composable(Routes.LOGIN) {
             LoginScreen(navController)
         }
@@ -65,6 +69,16 @@ fun RoleCallNavGraph(navController: NavHostController) {
         }
         composable(Routes.RESUME_LIST){
             ResumeListScreen(navController)
+        }
+        composable(Routes.ONBOARDING) {
+            OnboardingScreen(navController)
+        }
+        composable(
+            Routes.MATCHING_ANIMATION,
+            arguments = listOf(navArgument("resumeId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val resumeId = backStackEntry.arguments?.getString("resumeId") ?: ""
+            MatchingAnimationScreen(navController, resumeId)
         }
     }
 }

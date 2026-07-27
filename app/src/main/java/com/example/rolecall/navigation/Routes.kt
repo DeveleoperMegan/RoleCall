@@ -13,4 +13,6 @@ object Routes {
     const val JOB_DETAIL = "job_detail/{jobJson}"   // now uses JSON
     const val HISTORY = "history"
     const val RESUME_LIST = "resumeList"
+    const val ONBOARDING = "onboarding"
+    const val MATCHING_ANIMATION = "matching_animation/{resumeId}"
 }

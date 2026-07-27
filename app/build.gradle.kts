@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt.android)
     id("com.google.devtools.ksp")
+
 }
 
 android {
@@ -104,4 +105,8 @@ dependencies {
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
+
+    //data store dependencies for onboarding
+    implementation(libs.androidx.datastore.preferences)
+
 }

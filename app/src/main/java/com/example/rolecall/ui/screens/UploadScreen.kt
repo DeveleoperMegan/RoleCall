@@ -2,7 +2,6 @@ package com.example.rolecall.ui.screens
 
 import android.Manifest
 import android.net.Uri
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -13,7 +12,6 @@ import androidx.camera.view.PreviewView
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,208 +20,23 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.foundation.lazy.items
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
-import com.example.rolecall.data.model.JobItem
-import com.example.rolecall.data.remote.ResumeItem
 import com.example.rolecall.navigation.Routes
-import com.example.rolecall.network.FastAPIRepository
 import com.example.rolecall.ui.components.RoleCallScaffold
 import com.example.rolecall.ui.theme.*
-import com.google.gson.Gson
-import com.google.gson.annotations.SerializedName
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import javax.inject.Inject
+import com.example.rolecall.ui.viewmodel.UploadViewModel
+import com.example.rolecall.ui.viewmodel.UploadUiState
 
-// ──────────────────────────────────────────────────────────────────────────────
-// JSON response models (must match backend exactly)
-// ──────────────────────────────────────────────────────────────────────────────
 
-data class UploadJsonResponse(
-    @SerializedName("resume_id") val resumeId: String,
-    val filename: String,
-    @SerializedName("text_length") val textLength: Int
-)
 
-data class SearchJsonResponse(
-    @SerializedName("resume_id") val resumeId: String?,
-    @SerializedName("matches") val matches: List<MatchJsonItem>?
-)
 
-data class MatchJsonItem(
-    val id: String,
-    @SerializedName("job_id") val jobId: Long?,
-    @SerializedName("company_name") val companyName: String?,
-    val title: String,
-    val description: String,
-    @SerializedName("max_salary") val maxSalary: Double?,
-    @SerializedName("min_salary") val minSalary: Double?,
-    @SerializedName("post_date") val postDate: String?,
-    @SerializedName("post_url") val postUrl: String?,
-    @SerializedName("expiration_date") val expirationDate: String?,
-    val similarity: Double
-)
 
-// ──────────────────────────────────────────────────────────────────────────────
-// UploadViewModel (extended with saved resumes support)
-// ──────────────────────────────────────────────────────────────────────────────
-
-@HiltViewModel
-class UploadViewModel @Inject constructor(
-    private val fastAPIRepository: FastAPIRepository
-) : ViewModel() {
-
-    var uploadState by mutableStateOf<UploadUiState>(UploadUiState.Idle)
-        private set
-    var matchState by mutableStateOf<MatchUiState>(MatchUiState.Idle)
-        private set
-
-    // State for previously uploaded resumes
-    var savedResumes by mutableStateOf<List<ResumeItem>>(emptyList())
-        private set
-    var isLoadingResumes by mutableStateOf(false)
-        private set
-
-    private val gson = Gson()
-
-    // Load the list of resumes already stored on the server
-    fun loadSavedResumes() {
-        viewModelScope.launch {
-            isLoadingResumes = true
-            val list = withContext(Dispatchers.IO) {
-                fastAPIRepository.getResumes()
-            }
-            savedResumes = list ?: emptyList()
-            isLoadingResumes = false
-        }
-    }
-
-    // Search using an existing resume ID (no upload needed)
-    fun searchExistingResume(resumeId: String, navController: NavController) {
-        viewModelScope.launch {
-            matchState = MatchUiState.Loading
-            val searchJson = withContext(Dispatchers.IO) {
-                fastAPIRepository.searchJobs(resumeId)
-            }
-            Log.i("UPLOAD_DEBUG", "Search JSON from existing resume: $searchJson")
-            if (searchJson == null) {
-                matchState = MatchUiState.Error("Search failed")
-                return@launch
-            }
-            val searchResponse = try {
-                gson.fromJson(searchJson, SearchJsonResponse::class.java)
-            } catch (e: Exception) {
-                Log.e("UPLOAD_DEBUG", "Parse error: ${e.message}")
-                matchState = MatchUiState.Error("Failed to parse results")
-                return@launch
-            }
-            val matchList = searchResponse.matches ?: emptyList()
-            Log.i("UPLOAD_DEBUG", "Final match list size: ${matchList.size}")
-            val jobs = matchList.map { match ->
-                JobItem(
-                    id = match.id,
-                    title = match.title,
-                    company = match.companyName ?: "Unknown",
-                    location = "",
-                    description = match.description,
-                    matchScore = (match.similarity * 100).toFloat(),
-                    maxSalary = match.maxSalary,
-                    minSalary = match.minSalary,
-                    postDate = match.postDate,
-                    postUrl = match.postUrl
-                )
-            }
-            matchState = MatchUiState.Success(jobs.size)
-            MatchResultsHolder.setResults(jobs)
-            navController.navigate(Routes.RESULTS) {
-                popUpTo(Routes.UPLOAD) { inclusive = false }
-            }
-        }
-    }
-
-    // Full upload → search pipeline (unchanged from before)
-    fun uploadAndSearch(file: File, mimeType: String, navController: NavController) {
-        viewModelScope.launch {
-            uploadState = UploadUiState.Loading
-
-            val uploadJson = withContext(Dispatchers.IO) {
-                fastAPIRepository.uploadResume(file, mimeType)
-            }
-            if (uploadJson == null) {
-                uploadState = UploadUiState.Error("Upload failed")
-                return@launch
-            }
-
-            val uploadResponse = gson.fromJson(uploadJson, UploadJsonResponse::class.java)
-            uploadState = UploadUiState.Success(uploadResponse.filename, uploadResponse.textLength)
-
-            matchState = MatchUiState.Loading
-            val searchJson = withContext(Dispatchers.IO) {
-                fastAPIRepository.searchJobs(uploadResponse.resumeId)
-            }
-            Log.i("UPLOAD_DEBUG", "Search JSON: $searchJson")
-            if (searchJson == null) {
-                matchState = MatchUiState.Error("Search failed")
-                return@launch
-            }
-
-            val searchResponse = try {
-                gson.fromJson(searchJson, SearchJsonResponse::class.java)
-            } catch (e: Exception) {
-                Log.e("UPLOAD_DEBUG", "Parse error: ${e.message}")
-                matchState = MatchUiState.Error("Failed to parse results")
-                return@launch
-            }
-
-            val matchList = searchResponse.matches ?: emptyList()
-            Log.i("UPLOAD_DEBUG", "Final match list size: ${matchList.size}")
-            val jobs = matchList.map { match ->
-                Log.i("UPLOAD_DEBUG", "Match: ${match.title}, similarity: ${match.similarity}")
-                JobItem(
-                    id = match.id,
-                    title = match.title,
-                    company = match.companyName ?: "Unknown",
-                    location = "",
-                    description = match.description,
-                    matchScore = (match.similarity * 100).toFloat(),
-                    maxSalary = match.maxSalary,
-                    minSalary = match.minSalary,
-                    postDate = match.postDate,
-                    postUrl = match.postUrl
-                )
-            }
-            matchState = MatchUiState.Success(jobs.size)
-            MatchResultsHolder.setResults(jobs)
-            navController.navigate(Routes.RESULTS) {
-                popUpTo(Routes.UPLOAD) { inclusive = false }
-            }
-        }
-    }
-}
-
-// ── UI state classes ─────────────────────────────────────────────────────────
-sealed class UploadUiState {
-    data object Idle : UploadUiState()
-    data object Loading : UploadUiState()
-    data class Success(val filename: String, val textLength: Int) : UploadUiState()
-    data class Error(val message: String) : UploadUiState()
-}
-
-sealed class MatchUiState {
-    data object Idle : MatchUiState()
-    data object Loading : MatchUiState()
-    data class Success(val matchCount: Int) : MatchUiState()
-    data class Error(val message: String) : MatchUiState()
-}
 
 // ── UploadScreen composable (complete with camera preview) ──────────────────
 
@@ -446,8 +259,7 @@ fun UploadScreen(navController: NavController) {
                 }
 
                 if (selectedFile != null &&
-                    viewModel.uploadState !is UploadUiState.Loading &&
-                    viewModel.matchState !is MatchUiState.Loading
+                    viewModel.uploadState !is UploadUiState.Loading
                 ) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
@@ -485,25 +297,6 @@ fun UploadScreen(navController: NavController) {
                     }
                     is UploadUiState.Idle -> {}
                 }
-
-                // ── Match state display ────────────────────────────────────
-                when (val state = viewModel.matchState) {
-                    is MatchUiState.Loading -> {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        CircularProgressIndicator()
-                        Text("Finding matches...", color = PrimaryText)
-                    }
-                    is MatchUiState.Success -> {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Found ${state.matchCount} matches!", color = AccentSuccess)
-                    }
-                    is MatchUiState.Error -> {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(state.message, color = AccentAlert)
-                    }
-                    is MatchUiState.Idle -> {}
-                }
-
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
