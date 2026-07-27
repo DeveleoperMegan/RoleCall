@@ -6,7 +6,7 @@ import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.bearer
 
-class ApiClient(private val tokenManager: TokenManager){
+class ApiClient(val tokenManager: TokenManager){
     val fastAPIClient = HttpClient(Android) {
         install(Auth) {
             bearer {

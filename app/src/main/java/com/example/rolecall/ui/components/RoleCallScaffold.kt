@@ -26,6 +26,9 @@ import com.example.rolecall.R
 import com.example.rolecall.navigation.Routes
 import com.example.rolecall.ui.screens.AuthViewModel
 import com.example.rolecall.ui.theme.*
+import androidx.compose.foundation.clickable
+import com.example.rolecall.navigation.Routes.RESUME_LIST
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,6 +95,13 @@ fun RoleCallScaffold(
                             }
                         )
                         DropdownMenuItem(
+                            text = { Text("My Resumes") },
+                            onClick = {
+                                menuExpanded = false
+                                navController.navigate(RESUME_LIST)
+                            }
+                        )
+                        DropdownMenuItem(
                             text = { Text("Results") },
                             onClick = {
                                 menuExpanded = false
@@ -114,6 +124,7 @@ fun RoleCallScaffold(
                         )
                         HorizontalDivider(color = Border)
 
+                        // contextual login/logout
                         if (authState.isLoggedIn) {
                             DropdownMenuItem(
                                 text = { Text("Log Out") },
@@ -227,7 +238,7 @@ fun RoleCallScaffold(
             }
         }
 
-        // ── Floating Logo (hovers above all layers) ──
+        // ── Floating Logo (clickable – navigates to home) ──
         Box(
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -236,12 +247,17 @@ fun RoleCallScaffold(
                 .size(64.dp)
                 .clip(CircleShape)
                 .background(FoundationDark)
+                .clickable {
+                    navController.navigate(Routes.UPLOAD) {
+                        popUpTo(Routes.UPLOAD) { inclusive = true }
+                    }
+                }
                 .padding(6.dp),
             contentAlignment = Alignment.Center
         ) {
             Image(
                 painter = painterResource(id = R.drawable.rolecall_logo),
-                contentDescription = "RoleCall Logo",
+                contentDescription = "RoleCall Logo – Go to Home",
                 modifier = Modifier.size(52.dp)
             )
         }

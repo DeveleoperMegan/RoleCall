@@ -12,6 +12,9 @@ import androidx.navigation.navArgument
 import com.example.rolecall.data.model.JobItem
 import com.example.rolecall.ui.screens.*
 import com.google.gson.Gson
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
+import com.example.rolecall.ui.screens.ResumeListScreen
 
 @Composable
 fun RoleCallNavGraph(navController: NavHostController) {
@@ -49,8 +52,9 @@ fun RoleCallNavGraph(navController: NavHostController) {
             arguments = listOf(navArgument("jobJson") { type = NavType.StringType })
         ) { backStackEntry ->
             val jobJson = backStackEntry.arguments?.getString("jobJson") ?: ""
+            val decodedJson = URLDecoder.decode(jobJson, StandardCharsets.UTF_8.toString())
             val job = try {
-                Gson().fromJson(jobJson, JobItem::class.java)
+                Gson().fromJson(decodedJson, JobItem::class.java)
             } catch (e: Exception) {
                 null
             }
@@ -58,6 +62,9 @@ fun RoleCallNavGraph(navController: NavHostController) {
         }
         composable(Routes.HISTORY) {
             HistoryScreen(navController)
+        }
+        composable(Routes.RESUME_LIST){
+            ResumeListScreen(navController)
         }
     }
 }

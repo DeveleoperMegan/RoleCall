@@ -11,6 +11,10 @@ data class SavedJobEntity(
     val location: String,
     val description: String,
     val matchScore: Float,
-    val status: String = "saved",     // "saved", "applied", "interviewing", "offer"
-    val dateSaved: Long = System.currentTimeMillis()
+    val status: String = "saved",
+    val dateSaved: Long = System.currentTimeMillis(),
+    val maxSalary: Double? = null,
+    val minSalary: Double? = null,
+    val postDate: String? = null,
+    val postUrl: String? = null
 )

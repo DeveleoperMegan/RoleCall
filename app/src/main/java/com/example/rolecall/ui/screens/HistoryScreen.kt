@@ -26,6 +26,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.google.gson.Gson
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
@@ -173,12 +176,13 @@ private fun SavedTab(
                 JobCard(
                     job = job,
                     onClick = {
-                        navController.navigate("job_detail/${job.id}")
+                        // Serialize the full JobItem and pass it as JSON
+                        val jobJson = Gson().toJson(job)
+                        val encodedJson = URLEncoder.encode(jobJson, StandardCharsets.UTF_8.toString())
+                        navController.navigate("job_detail/$encodedJson")
                     },
                     isSaved = true,
-                    onSaveClick = {
-                        onDeleteJob(job)
-                    }
+                    onSaveClick = { onDeleteJob(job) }
                 )
             }
         }

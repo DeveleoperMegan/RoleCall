@@ -79,10 +79,14 @@ class JobRepository(
         title = title,
         company = company,
         location = location,
-        description = "",
+        description = description,   // no longer ""
         matchScore = matchScore,
         status = "saved",
-        dateSaved = System.currentTimeMillis()
+        dateSaved = System.currentTimeMillis(),
+        maxSalary = maxSalary,
+        minSalary = minSalary,
+        postDate = postDate,
+        postUrl = postUrl
     )
 
     private fun SavedJobEntity.toJobItem() = JobItem(
@@ -90,6 +94,11 @@ class JobRepository(
         title = title,
         company = company,
         location = location,
-        matchScore = matchScore
+        description = description,
+        matchScore = matchScore,
+        maxSalary = maxSalary,
+        minSalary = minSalary,
+        postDate = postDate,
+        postUrl = postUrl
     )
 }

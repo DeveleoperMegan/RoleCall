@@ -1,6 +1,8 @@
 package com.example.rolecall.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -66,7 +68,12 @@ fun JobDetailScreen(navController: NavController, job: JobItem?) {
         title = "Job Details",
         showSearchBar = false
     ) { modifier ->
-        Column(modifier = modifier.padding(16.dp)) {
+        // Enable vertical scrolling for long descriptions
+        Column(
+            modifier = modifier
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
             Text(
                 text = job.title,
                 style = MaterialTheme.typography.headlineSmall,

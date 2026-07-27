@@ -1,6 +1,9 @@
 package com.example.rolecall.network
 
 import android.util.Log
+import com.example.rolecall.data.remote.ResumeItem
+import com.example.rolecall.data.remote.ResumeDetail
+import com.google.gson.Gson
 import io.ktor.client.request.get
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
@@ -11,6 +14,10 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import java.io.File
+import io.ktor.client.request.delete
+import io.ktor.client.request.header
+import io.ktor.client.request.patch
+import io.ktor.http.ContentType
 
 class FastAPIRepository(tokenManager: TokenManager) {
     private val apiClient = ApiClient(tokenManager)
@@ -54,6 +61,8 @@ class FastAPIRepository(tokenManager: TokenManager) {
 
     suspend fun uploadResume(file: File, mimeType: String): String? {
         return try {
+            val token = apiClient.tokenManager.getJWT()
+            Log.i("FAST_API", "Token being sent: ${token?.take(20)}...")
             Log.i("FAST_API", "Uploading ${file.name} (${file.length()} bytes) as $mimeType")
             val response: HttpResponse = client.post("$baseUrl/api/v1/resumes/upload") {
                 setBody(
@@ -95,6 +104,78 @@ class FastAPIRepository(tokenManager: TokenManager) {
         } catch (e: Exception) {
             Log.e("FAST_API", "Network Error during Search", e)
             null
+        }
+    }
+
+    // Fetch all previously uploaded resumes
+    suspend fun getResumes(): List<ResumeItem>? {
+        return try {
+            val response: HttpResponse = client.get("$baseUrl/api/v1/resumes/all")
+            if (response.status.value in 200..299) {
+                val body = response.bodyAsText()
+                Log.i("FAST_API", "Resumes: $body")
+                Gson().fromJson(body, Array<ResumeItem>::class.java)?.toList()
+            } else {
+                Log.e("FAST_API", "Get resumes failed: ${response.status}")
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("FAST_API", "Network Error during Get Resumes", e)
+            null
+        }
+    }
+
+    //delete previously uploaded resumes
+    suspend fun deleteResume(resumeId: String): Boolean {
+        return try {
+            val response: HttpResponse = client.delete("$baseUrl/api/v1/resumes/$resumeId")
+            if (response.status.value in 200..299) {
+                Log.i("FAST_API", "Resume deleted: $resumeId")
+                true
+            } else {
+                Log.e("FAST_API", "Delete resume failed: ${response.status}")
+                false
+            }
+        } catch (e: Exception) {
+            Log.e("FAST_API", "Network Error during Delete Resume", e)
+            false
+        }
+    }
+
+    //get resume details for preview
+    suspend fun getResumeDetail(resumeId: String): ResumeDetail? {
+        return try {
+            val response: HttpResponse = client.get("$baseUrl/api/v1/resumes/$resumeId")
+            if (response.status.value in 200..299) {
+                val body = response.bodyAsText()
+                Gson().fromJson(body, ResumeDetail::class.java)
+            } else {
+                Log.e("FAST_API", "Get resume detail failed: ${response.status}")
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("FAST_API", "Network Error during Get Resume Detail", e)
+            null
+        }
+    }
+
+    // Rename endpoint – expects the backend to accept PATCH with a JSON body
+    suspend fun renameResume(resumeId: String, newFilename: String): Boolean {
+        return try {
+            val response: HttpResponse = client.patch("$baseUrl/api/v1/resumes/$resumeId") {
+                header("Content-Type", "application/json")
+                setBody("""{"filename":"$newFilename"}""")
+            }
+            if (response.status.value in 200..299) {
+                Log.i("FAST_API", "Resume renamed: $resumeId -> $newFilename")
+                true
+            } else {
+                Log.e("FAST_API", "Rename failed: ${response.status}")
+                false
+            }
+        } catch (e: Exception) {
+            Log.e("FAST_API", "Network Error during Rename", e)
+            false
         }
     }
 }

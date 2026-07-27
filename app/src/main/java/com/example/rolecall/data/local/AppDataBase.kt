@@ -14,7 +14,7 @@ import com.example.rolecall.data.local.entity.SavedJobEntity
         ResumeEntity::class,
         MatchHistoryEntity::class
     ],
-    version = 2,
+    version = 3,   // was 2
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
