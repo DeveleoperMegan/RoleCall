@@ -1,7 +1,5 @@
 package com.example.rolecall.ui.screens
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -26,15 +24,11 @@ import com.example.rolecall.data.remote.ResumeItem
 import com.example.rolecall.ui.components.RoleCallScaffold
 import com.example.rolecall.ui.theme.*
 import com.example.rolecall.ui.viewmodel.ResumeListViewModel
-import kotlinx.coroutines.launch
 
 @Composable
 fun ResumeListScreen(navController: NavController) {
     val viewModel: ResumeListViewModel = hiltViewModel()
     val context = LocalContext.current
-
-    // Capture coroutine scope at composable level
-    val scope = rememberCoroutineScope()
 
     RoleCallScaffold(
         navController = navController,
@@ -61,17 +55,10 @@ fun ResumeListScreen(navController: NavController) {
 
                     ResumeCard(
                         resume = resume,
-                        onSearch = { viewModel.searchResume(resume.id, navController) },
+                        onSearch = { navController.navigate("matching_animation/${resume.id}") },
                         onDelete = { viewModel.deleteResume(resume.id) },
                         onPreview = {
-                            // Use the scope captured above (non‑composable lambda)
-                            scope.launch {
-                                val url = viewModel.getPreviewUrl(resume.id)
-                                url?.let {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it))
-                                    context.startActivity(intent)
-                                }
-                            }
+                            navController.navigate("preview/${resume.id}")
                         },
                         onRenameRequest = { showRenameDialog = true },
                         isDeleting = isDeleting

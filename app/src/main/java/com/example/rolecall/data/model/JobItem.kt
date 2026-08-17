@@ -25,5 +25,8 @@ data class JobItem(
     val maxSalary: Double? = null,
     val minSalary: Double? = null,
     val postDate: String? = null,
-    val postUrl: String? = null
+    val postUrl: String? = null,
+    // NEW fields
+    val matchingPhrases: List<String> = emptyList(),
+    val keySkills: List<String> = emptyList()
 )

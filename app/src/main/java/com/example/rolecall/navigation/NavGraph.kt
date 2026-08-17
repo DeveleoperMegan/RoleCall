@@ -14,7 +14,6 @@ import com.example.rolecall.ui.screens.*
 import com.google.gson.Gson
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
-import com.example.rolecall.ui.screens.ResumeListScreen
 
 @Composable
 fun RoleCallNavGraph(
@@ -24,11 +23,13 @@ fun RoleCallNavGraph(
     val authViewModel: AuthViewModel = hiltViewModel()
     val uiState by authViewModel.uiState.collectAsState()
 
-    val defaultStart = if (uiState.isLoggedIn) Routes.UPLOAD else Routes.LOGIN
+    val defaultStart = if (uiState.isLoggedIn) Routes.HOME else Routes.SIGNUP
     val startDestination = startRouteOverride ?: defaultStart
 
     NavHost(navController = navController, startDestination = startDestination) {
-        composable(Routes.ONBOARDING) { OnboardingScreen(navController) }
+        composable(Routes.ONBOARDING) {
+            OnboardingScreen(navController)
+        }
         composable(Routes.LOGIN) {
             LoginScreen(navController)
         }
@@ -67,11 +68,15 @@ fun RoleCallNavGraph(
         composable(Routes.HISTORY) {
             HistoryScreen(navController)
         }
-        composable(Routes.RESUME_LIST){
+        composable(Routes.RESUME_LIST) {
             ResumeListScreen(navController)
         }
-        composable(Routes.ONBOARDING) {
-            OnboardingScreen(navController)
+        composable(
+            Routes.PREVIEW,
+            arguments = listOf(navArgument("resumeId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val resumeId = backStackEntry.arguments?.getString("resumeId") ?: ""
+            PreviewScreen(navController, resumeId)
         }
         composable(
             Routes.MATCHING_ANIMATION,
@@ -79,6 +84,16 @@ fun RoleCallNavGraph(
         ) { backStackEntry ->
             val resumeId = backStackEntry.arguments?.getString("resumeId") ?: ""
             MatchingAnimationScreen(navController, resumeId)
+        }
+        composable(Routes.HOME) {
+            HomeScreen(navController)
+        }
+        composable(
+            Routes.SEARCH_RESULTS,
+            arguments = listOf(navArgument("query") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val query = backStackEntry.arguments?.getString("query") ?: ""
+            SearchResultsScreen(navController, query)
         }
     }
 }

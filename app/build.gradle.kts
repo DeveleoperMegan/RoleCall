@@ -109,4 +109,7 @@ dependencies {
     //data store dependencies for onboarding
     implementation(libs.androidx.datastore.preferences)
 
+    //coil dependencies for preview
+    implementation(libs.coil.compose)
+
 }

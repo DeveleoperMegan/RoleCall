@@ -14,5 +14,8 @@ object Routes {
     const val HISTORY = "history"
     const val RESUME_LIST = "resumeList"
     const val ONBOARDING = "onboarding"
-    const val MATCHING_ANIMATION = "matching_animation/{resumeId}"
+   const val MATCHING_ANIMATION = "matching_animation/{resumeId}"
+    const val PREVIEW = "preview/{resumeId}"
+    const val HOME = "home"
+    const val SEARCH_RESULTS = "search_results/{query}"
 }

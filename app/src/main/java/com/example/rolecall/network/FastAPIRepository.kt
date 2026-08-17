@@ -1,10 +1,9 @@
 package com.example.rolecall.network
 
 import android.util.Log
-import com.example.rolecall.data.remote.ResumeDetail
-import com.example.rolecall.data.remote.ResumeItem
-import com.example.rolecall.data.remote.UploadJsonResponse
+import com.example.rolecall.data.remote.*
 import com.google.gson.Gson
+import io.ktor.client.call.body
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.forms.MultiPartFormDataContent
@@ -20,12 +19,6 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import java.io.File
 
-/**
- * Single point of contact for all RoleCall backend API calls.
- * Uses the Ktor client from [ApiClient] which automatically attaches the user’s
- * JWT as a Bearer token. Every public function returns [Result] so that ViewModels
- * can handle success and failure uniformly.
- */
 class FastAPIRepository(tokenManager: TokenManager) {
 
     private val apiClient = ApiClient(tokenManager)
@@ -35,7 +28,6 @@ class FastAPIRepository(tokenManager: TokenManager) {
 
     // ── Health / Meta ────────────────────────────────────────────────────────
 
-    /** GET /health */
     suspend fun checkHealth(): Result<String> {
         return try {
             val response: HttpResponse = client.get("$baseUrl/health")
@@ -52,7 +44,6 @@ class FastAPIRepository(tokenManager: TokenManager) {
         }
     }
 
-    /** GET /me – returns the authenticated user’s email */
     suspend fun getUserEmail(): Result<String> {
         return try {
             val response: HttpResponse = client.get("$baseUrl/me")
@@ -71,10 +62,6 @@ class FastAPIRepository(tokenManager: TokenManager) {
 
     // ── Resumes ──────────────────────────────────────────────────────────────
 
-    /**
-     * POST /api/v1/resumes/upload
-     * Uploads a résumé file (PDF, image, text) and returns the parsed response.
-     */
     suspend fun uploadResume(file: File, mimeType: String): Result<UploadJsonResponse> {
         return try {
             Log.i("FAST_API", "Uploading ${file.name} (${file.length()} bytes) as $mimeType")
@@ -104,10 +91,6 @@ class FastAPIRepository(tokenManager: TokenManager) {
         }
     }
 
-    /**
-     * GET /api/v1/resumes/all
-     * Returns the list of resumes uploaded by the authenticated user.
-     */
     suspend fun getResumes(): Result<List<ResumeItem>> {
         return try {
             val response: HttpResponse = client.get("$baseUrl/api/v1/resumes/all")
@@ -125,10 +108,6 @@ class FastAPIRepository(tokenManager: TokenManager) {
         }
     }
 
-    /**
-     * GET /api/v1/resumes/{resumeId}
-     * Returns full details for a single resume (including file URL and raw text).
-     */
     suspend fun getResumeDetail(resumeId: String): Result<ResumeDetail> {
         return try {
             val response: HttpResponse = client.get("$baseUrl/api/v1/resumes/$resumeId")
@@ -145,10 +124,6 @@ class FastAPIRepository(tokenManager: TokenManager) {
         }
     }
 
-    /**
-     * DELETE /api/v1/resumes/{resumeId}
-     * Permanently deletes a resume and its embedding.
-     */
     suspend fun deleteResume(resumeId: String): Result<Unit> {
         return try {
             val response: HttpResponse = client.delete("$baseUrl/api/v1/resumes/$resumeId")
@@ -164,10 +139,6 @@ class FastAPIRepository(tokenManager: TokenManager) {
         }
     }
 
-    /**
-     * PATCH /api/v1/resumes/{resumeId}
-     * Renames an existing resume.
-     */
     suspend fun renameResume(resumeId: String, newFilename: String): Result<Unit> {
         return try {
             val response: HttpResponse = client.patch("$baseUrl/api/v1/resumes/$resumeId") {
@@ -186,13 +157,24 @@ class FastAPIRepository(tokenManager: TokenManager) {
         }
     }
 
-    // ── Search ───────────────────────────────────────────────────────────────
+    suspend fun downloadFile(fileUrl: String, filename: String, cacheDir: File): Result<String> {
+        return try {
+            val response: HttpResponse = client.get(fileUrl)
+            if (response.status.value in 200..299) {
+                val bytes: ByteArray = response.body()
+                val file = File(cacheDir, filename)
+                file.writeBytes(bytes)
+                Result.success(file.absolutePath)
+            } else {
+                Result.failure(Exception("Download failed: ${response.status}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 
-    /**
-     * GET /api/v1/search/{resumeId}
-     * Performs semantic search using the given resume ID and returns the raw JSON.
-     * (Callers can parse the JSON with Gson as before.)
-     */
+    // ── Search / Browse ──────────────────────────────────────────────────────
+
     suspend fun searchJobs(resumeId: String): Result<String> {
         return try {
             val response: HttpResponse = client.get("$baseUrl/api/v1/search/$resumeId")
@@ -205,6 +187,28 @@ class FastAPIRepository(tokenManager: TokenManager) {
             }
         } catch (e: Exception) {
             Log.e("FAST_API", "Search Error", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun browseJobs(after: String? = null): Result<JobPostingsPage> {
+        return try {
+            val url = if (after != null) {
+                "$baseUrl/api/v1/search/job_postings?after=$after"
+            } else {
+                "$baseUrl/api/v1/search/job_postings"
+            }
+            val response: HttpResponse = client.get(url)
+            if (response.status.value in 200..299) {
+                val body = response.bodyAsText()
+                Log.i("FAST_API", "Browse response: $body")
+                val page = gson.fromJson(body, JobPostingsPage::class.java)
+                Result.success(page)
+            } else {
+                Result.failure(Exception("Browse failed: ${response.status}"))
+            }
+        } catch (e: Exception) {
+            Log.e("FAST_API", "Browse Error", e)
             Result.failure(e)
         }
     }

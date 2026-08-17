@@ -136,6 +136,13 @@ fun SignupScreen(navController: NavController) {
             TextButton(onClick = { navController.navigate(Routes.LOGIN) }) {
                 Text("Already have an account? Log In", color = SecondaryText)
             }
+            TextButton(onClick = {
+                navController.navigate(Routes.HOME) {
+                    popUpTo(0) { inclusive = true }
+                }
+            }) {
+                Text("Skip for now, go to Home", color = SecondaryText)
+            }
         }
     }
 }
