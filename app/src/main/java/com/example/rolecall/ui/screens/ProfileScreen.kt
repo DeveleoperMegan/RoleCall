@@ -26,6 +26,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
@@ -64,7 +66,9 @@ fun ProfileScreen(navController: NavController) {
 
     RoleCallScaffold(navController = navController, title = "Profile", showSearchBar = false) { modifier ->
         Column(
-            modifier = modifier.padding(24.dp),
+            modifier = modifier
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(32.dp))

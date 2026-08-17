@@ -17,5 +17,7 @@ object Routes {
    const val MATCHING_ANIMATION = "matching_animation/{resumeId}"
     const val PREVIEW = "preview/{resumeId}"
     const val HOME = "home"
-    const val SEARCH_RESULTS = "search_results/{query}"
+    const val SEARCH_RESULTS = "search_results"
+    const val SEARCH = "search"                       // resume search page
+    const val WEB_SEARCH_ANIMATION = "web_search_animation/{query}"
 }

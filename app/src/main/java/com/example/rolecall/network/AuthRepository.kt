@@ -8,6 +8,7 @@ import kotlinx.coroutines.withContext
 
 object AuthRepository {
 
+    // Register user with email and password
     suspend fun signUpWithEmail(emailInput: String, passwordInput: String, tokenManager: TokenManager): String? {
         return withContext(Dispatchers.IO) {
             try {
@@ -15,9 +16,13 @@ object AuthRepository {
                     email = emailInput
                     password = passwordInput
                 }
+
                 val jwt = SupabaseClient.client.auth.currentAccessTokenOrNull()
+                val refreshToken = SupabaseClient.client.auth.currentSessionOrNull()?.refreshToken
+
                 if (jwt != null) {
                     tokenManager.saveJWT(jwt)
+                    if (refreshToken != null) tokenManager.saveRefreshToken(refreshToken)
                 }
                 jwt
             } catch (e: Exception) {
@@ -27,6 +32,7 @@ object AuthRepository {
         }
     }
 
+    // Authenticate user with email and password
     suspend fun loginWithEmail(emailInput: String, passwordInput: String, tokenManager: TokenManager): String? {
         return withContext(Dispatchers.IO) {
             try {
@@ -34,9 +40,13 @@ object AuthRepository {
                     email = emailInput
                     password = passwordInput
                 }
+
                 val jwt = SupabaseClient.client.auth.currentAccessTokenOrNull()
+                val refreshToken = SupabaseClient.client.auth.currentSessionOrNull()?.refreshToken
+
                 if (jwt != null) {
                     tokenManager.saveJWT(jwt)
+                    if (refreshToken != null) tokenManager.saveRefreshToken(refreshToken)
                 }
                 jwt
             } catch (e: Exception) {
@@ -46,7 +56,8 @@ object AuthRepository {
         }
     }
 
-    suspend fun sendPasswordResetEmail(emailInput: String, tokenManager: TokenManager) {
+    // Send password reset email
+    suspend fun sendPasswordResetEmail(emailInput: String) {
         withContext(Dispatchers.IO) {
             try {
                 SupabaseClient.client.auth.resetPasswordForEmail(emailInput)
@@ -58,6 +69,7 @@ object AuthRepository {
         }
     }
 
+    // Change password for logged-in user
     suspend fun changePassword(newPassword: String) {
         withContext(Dispatchers.IO) {
             try {
@@ -72,6 +84,24 @@ object AuthRepository {
         }
     }
 
+    // Refresh the access token using the stored refresh token
+    suspend fun refreshAccessToken(tokenManager: TokenManager): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                SupabaseClient.client.auth.refreshCurrentSession()
+                val newToken = SupabaseClient.client.auth.currentAccessTokenOrNull()
+                if (newToken != null) {
+                    tokenManager.saveJWT(newToken)
+                }
+                newToken
+            } catch (e: Exception) {
+                Log.e("SUPABASE", "Refresh token error", e)
+                null
+            }
+        }
+    }
+
+    // Sign out
     suspend fun signOut(tokenManager: TokenManager) {
         withContext(Dispatchers.IO) {
             try {
@@ -80,7 +110,7 @@ object AuthRepository {
             } catch (e: Exception) {
                 Log.e("SUPABASE", "Sign Out Error", e)
             } finally {
-                tokenManager.clearJWT()
+                tokenManager.clearTokens()
             }
         }
     }

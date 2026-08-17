@@ -111,5 +111,6 @@ dependencies {
 
     //coil dependencies for preview
     implementation(libs.coil.compose)
-
+    //pull to refresh
+    implementation("androidx.compose.material3:material3:1.3.0")
 }

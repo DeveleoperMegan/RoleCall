@@ -23,7 +23,7 @@ fun HomeScreen(navController: NavController) {
 
     fun submitSearch() {
         if (searchQuery.isNotBlank()) {
-            navController.navigate("search_results/$searchQuery")
+            navController.navigate("web_search_animation/$searchQuery")
         }
     }
 

@@ -40,7 +40,7 @@ class ForgotPasswordViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
-                AuthRepository.sendPasswordResetEmail(email, tokenManager)
+                AuthRepository.sendPasswordResetEmail(email)
                 _uiState.update { it.copy(isLoading = false, isSuccess = true) }
             } catch (e: Exception) {
                 _uiState.update {

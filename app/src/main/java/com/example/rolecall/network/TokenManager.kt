@@ -27,7 +27,23 @@ class TokenManager(context: Context) {
         return sharedPreferences.getString("JWT_TOKEN", null)
     }
 
+    fun saveRefreshToken(refreshToken: String) {
+        sharedPreferences.edit { putString("REFRESH_TOKEN", refreshToken) }
+    }
+
+    fun getRefreshToken(): String? {
+        return sharedPreferences.getString("REFRESH_TOKEN", null)
+    }
+
+    fun clearTokens() {
+        sharedPreferences.edit {
+            remove("JWT_TOKEN")
+            remove("REFRESH_TOKEN")
+        }
+    }
+
+
     fun clearJWT() {
-        sharedPreferences.edit { remove("JWT_TOKEN") }
+        clearTokens()
     }
 }

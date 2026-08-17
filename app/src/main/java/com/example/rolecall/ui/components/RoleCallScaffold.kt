@@ -25,6 +25,7 @@ import com.example.rolecall.R
 import com.example.rolecall.navigation.Routes
 import com.example.rolecall.ui.screens.AuthViewModel
 import com.example.rolecall.ui.theme.*
+import androidx.compose.foundation.clickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,7 +50,7 @@ fun RoleCallScaffold(
     val navItems = listOf(
         BottomNavItem("Home", Routes.HOME, Icons.Default.Home),
         BottomNavItem("Upload", Routes.UPLOAD, Icons.Default.Upload),
-        BottomNavItem("Search", "search_placeholder", Icons.Default.Search),
+        BottomNavItem("Search", Routes.SEARCH, Icons.Default.Search),
         BottomNavItem("History", Routes.HISTORY, Icons.Default.DateRange),
         BottomNavItem("Profile", Routes.PROFILE, Icons.Default.Person)
     )
@@ -59,7 +60,7 @@ fun RoleCallScaffold(
 
     fun performSearch() {
         if (searchQuery.isNotBlank()) {
-            navController.navigate("search_results/$searchQuery")
+            navController.navigate("web_search_animation/$searchQuery")
         }
     }
 
@@ -160,15 +161,10 @@ fun RoleCallScaffold(
                     NavigationBarItem(
                         selected = currentRoute == item.route,
                         onClick = {
-                            if (item.route == "search_placeholder") {
-                                // For now, navigate to Home; replace with search screen later
-                                navController.navigate(Routes.HOME)
-                            } else {
                                 navController.navigate(item.route) {
                                     popUpTo(Routes.HOME) { inclusive = false }
                                     launchSingleTop = true
                                 }
-                            }
                         },
                         icon = { Icon(item.icon, contentDescription = item.label) },
                         label = { Text(item.label) }
@@ -186,12 +182,17 @@ fun RoleCallScaffold(
                 .size(64.dp)
                 .clip(CircleShape)
                 .background(FoundationDark)
+                .clickable {
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.HOME) { inclusive = true }
+                    }
+                }
                 .padding(6.dp),
             contentAlignment = Alignment.Center
         ) {
             Image(
                 painter = painterResource(id = R.drawable.rolecall_logo),
-                contentDescription = "RoleCall Logo",
+                contentDescription = "RoleCall Logo – Go to Home",
                 modifier = Modifier.size(52.dp)
             )
         }

@@ -88,12 +88,18 @@ fun RoleCallNavGraph(
         composable(Routes.HOME) {
             HomeScreen(navController)
         }
+        composable(Routes.SEARCH_RESULTS) {
+            SearchResultsScreen(navController, null)
+        }
+        composable(Routes.SEARCH) {
+            ResumeSearchScreen(navController)
+        }
         composable(
-            Routes.SEARCH_RESULTS,
+            Routes.WEB_SEARCH_ANIMATION,
             arguments = listOf(navArgument("query") { type = NavType.StringType })
         ) { backStackEntry ->
             val query = backStackEntry.arguments?.getString("query") ?: ""
-            SearchResultsScreen(navController, query)
+            WebSearchAnimationScreen(navController, query)
         }
     }
 }

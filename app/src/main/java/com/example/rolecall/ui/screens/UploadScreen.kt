@@ -4,15 +4,10 @@ import android.Manifest
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.*
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,7 +18,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.rolecall.data.remote.ResumeItem
 import com.example.rolecall.navigation.Routes
 import com.example.rolecall.ui.components.RoleCallScaffold
 import com.example.rolecall.ui.theme.*
@@ -45,10 +39,6 @@ fun UploadScreen(navController: NavController) {
     var showCamera by remember { mutableStateOf(false) }
 
     val cameraController = remember { LifecycleCameraController(context) }
-
-    LaunchedEffect(Unit) {
-        viewModel.loadSavedResumes()
-    }
 
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -90,11 +80,10 @@ fun UploadScreen(navController: NavController) {
 
     RoleCallScaffold(
         navController = navController,
-        title = "RoleCall",
+        title = "Upload Resume",
         showSearchBar = false
     ) { modifier ->
         if (showCamera) {
-            // Camera preview remains unchanged
             Column(modifier = modifier.fillMaxSize()) {
                 AndroidView(
                     factory = { ctx ->
@@ -144,60 +133,30 @@ fun UploadScreen(navController: NavController) {
             }
         } else {
             Column(
-                modifier = modifier.padding(24.dp),
+                modifier = modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text("Welcome to RoleCall", style = MaterialTheme.typography.headlineMedium, color = PrimaryText)
-                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    "Upload Your Resume",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = PrimaryText
+                )
+                Spacer(modifier = Modifier.height(32.dp))
 
-                // Saved resumes section
-                if (viewModel.isLoadingResumes) {
-                    CircularProgressIndicator()
-                } else if (viewModel.savedResumes.isNotEmpty()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Your Uploaded Resumes", style = MaterialTheme.typography.titleMedium, color = PrimaryText)
-                        TextButton(onClick = { navController.navigate(Routes.RESUME_LIST) }) {
-                            Text("View All", color = UiInteractive)
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    LazyColumn(
-                        modifier = Modifier.heightIn(max = 200.dp).fillMaxWidth()
-                    ) {
-                        items(viewModel.savedResumes) { resume ->
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp)
-                                    .clickable {
-                                        navController.navigate("matching_animation/${resume.id}")
-                                    },
-                                colors = CardDefaults.cardColors(containerColor = FoundationSurface),
-                                shape = MaterialTheme.shapes.small
-                            ) {
-                                Column(modifier = Modifier.padding(12.dp)) {
-                                    Text(resume.filename, color = PrimaryText, style = MaterialTheme.typography.bodyMedium)
-                                    Text("Uploaded: ${resume.createdAt.take(10)}", color = SecondaryText, style = MaterialTheme.typography.bodySmall)
-                                }
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    HorizontalDivider(color = Border)
-                    Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = { pdfPickerLauncher.launch(arrayOf("application/pdf")) }) {
+                    Text("Upload PDF")
                 }
-
-                // Upload new resume buttons
-                Button(onClick = { pdfPickerLauncher.launch(arrayOf("application/pdf")) }) { Text("Upload New PDF") }
                 Spacer(modifier = Modifier.height(12.dp))
-                Button(onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) }) { Text("Take Photo") }
+                Button(onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) }) {
+                    Text("Take Photo")
+                }
                 Spacer(modifier = Modifier.height(12.dp))
-                OutlinedButton(onClick = { imagePickerLauncher.launch(arrayOf("image/*")) }) { Text("Choose Photo (PDF works best)") }
+                OutlinedButton(onClick = { imagePickerLauncher.launch(arrayOf("image/*")) }) {
+                    Text("Choose from Gallery")
+                }
 
                 selectedFileName?.let {
                     Spacer(modifier = Modifier.height(16.dp))
@@ -219,7 +178,9 @@ fun UploadScreen(navController: NavController) {
                             viewModel.uploadAndNavigateToAnimation(selectedFile!!, mimeType, navController)
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = AccentSuccess)
-                    ) { Text("Upload and Find Jobs") }
+                    ) {
+                        Text("Upload and Find Jobs")
+                    }
                 }
 
                 when (val state = viewModel.uploadState) {
@@ -240,6 +201,7 @@ fun UploadScreen(navController: NavController) {
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
+
             }
         }
     }

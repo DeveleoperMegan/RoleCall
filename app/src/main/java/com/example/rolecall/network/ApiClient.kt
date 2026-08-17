@@ -6,9 +6,10 @@ import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.bearer
 
-class ApiClient(val tokenManager: TokenManager){
+class ApiClient(private val tokenManager: TokenManager) {
+
     val fastAPIClient = HttpClient(Android) {
-        // Follow redirects (needed for signed storage URLs)
+        // Follow redirects if needed
         followRedirects = true
 
         install(Auth) {
@@ -16,11 +17,27 @@ class ApiClient(val tokenManager: TokenManager){
                 loadTokens {
                     val token = tokenManager.getJWT()
                     if (token != null) {
-                        BearerTokens(accessToken = token, refreshToken = "")
-                    } else null
+                        BearerTokens(
+                            accessToken = token,
+                            refreshToken = tokenManager.getRefreshToken() ?: ""
+                        )
+                    } else {
+                        null
+                    }
+                }
+
+                refreshTokens {
+                    val newToken = AuthRepository.refreshAccessToken(tokenManager)
+                    if (newToken != null) {
+                        BearerTokens(
+                            accessToken = newToken,
+                            refreshToken = tokenManager.getRefreshToken() ?: ""
+                        )
+                    } else {
+                        null
+                    }
                 }
             }
         }
     }
-
 }
