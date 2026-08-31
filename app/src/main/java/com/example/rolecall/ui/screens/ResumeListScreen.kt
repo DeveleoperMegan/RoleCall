@@ -63,7 +63,6 @@ fun ResumeListScreen(navController: NavController) {
                         onRenameRequest = { showRenameDialog = true },
                         isDeleting = isDeleting
                     )
-
                     if (showRenameDialog) {
                         var newName by remember { mutableStateOf(resume.filename) }
                         AlertDialog(
@@ -127,12 +126,13 @@ private fun ResumeCard(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(SecondaryText),
+                    .background(SecondaryText)
+                    .clickable { onPreview() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     Icons.Default.Person,
-                    contentDescription = "Profile picture",
+                    contentDescription = "Preview resume",
                     tint = PrimaryText,
                     modifier = Modifier.size(24.dp)
                 )

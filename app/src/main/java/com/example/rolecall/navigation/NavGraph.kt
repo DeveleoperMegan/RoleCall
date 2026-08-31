@@ -101,5 +101,8 @@ fun RoleCallNavGraph(
             val query = backStackEntry.arguments?.getString("query") ?: ""
             WebSearchAnimationScreen(navController, query)
         }
+        composable(Routes.APPLICATIONS) {
+            ApplicationsScreen(navController)
+        }
     }
 }

@@ -24,4 +24,10 @@ interface SavedJobDao {
 
     @Query("UPDATE saved_jobs SET status = :status WHERE jobId = :jobId")
     suspend fun updateJobStatus(jobId: String, status: String)
+
+    @Query("SELECT * FROM saved_jobs WHERE status = :status ORDER BY dateSaved DESC")
+    fun getJobsByStatus(status: String): Flow<List<SavedJobEntity>>
+
+    @Query("SELECT * FROM saved_jobs ORDER BY dateSaved DESC")
+    fun getAllJobs(): Flow<List<SavedJobEntity>>
 }

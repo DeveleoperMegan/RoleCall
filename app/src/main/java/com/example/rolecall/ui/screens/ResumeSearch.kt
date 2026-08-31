@@ -42,7 +42,7 @@ fun ResumeSearchScreen(navController: NavController) {
     RoleCallScaffold(
         navController = navController,
         title = "Search Jobs",
-        showSearchBar = false  // we use our own search bar here
+        showSearchBar = false
     ) { modifier ->
         Column(
             modifier = modifier
@@ -50,7 +50,6 @@ fun ResumeSearchScreen(navController: NavController) {
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Search bar for term-based search
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -88,17 +87,11 @@ fun ResumeSearchScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(8.dp))
 
             if (viewModel.isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             } else if (viewModel.resumes.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("No resumes uploaded yet.", color = SecondaryText)
                 }
                 Spacer(modifier = Modifier.height(12.dp))
@@ -116,6 +109,9 @@ fun ResumeSearchScreen(navController: NavController) {
                             resume = resume,
                             onClick = {
                                 navController.navigate("matching_animation/${resume.id}")
+                            },
+                            onPreview = {
+                                navController.navigate("preview/${resume.id}")
                             }
                         )
                     }
@@ -132,7 +128,8 @@ fun ResumeSearchScreen(navController: NavController) {
 @Composable
 private fun ResumeCard(
     resume: ResumeItem,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onPreview: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -147,10 +144,12 @@ private fun ResumeCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Left icon now clickable → opens preview
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .background(SecondaryText, shape = RoundedCornerShape(20.dp)),
+                    .background(SecondaryText, shape = RoundedCornerShape(20.dp))
+                    .clickable { onPreview() },
                 contentAlignment = Alignment.Center
             ) {
                 Text("📄", color = PrimaryText)

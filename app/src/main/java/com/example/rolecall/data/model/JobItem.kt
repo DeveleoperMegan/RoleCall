@@ -28,5 +28,6 @@ data class JobItem(
     val postUrl: String? = null,
     // NEW fields
     val matchingPhrases: List<String> = emptyList(),
-    val keySkills: List<String> = emptyList()
+    val keySkills: List<String> = emptyList(),
+    val status: String = "saved"   // NEW: saved, applied, interviewing, offer
 )

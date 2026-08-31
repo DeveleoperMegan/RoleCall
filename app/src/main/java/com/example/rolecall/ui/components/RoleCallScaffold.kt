@@ -51,10 +51,9 @@ fun RoleCallScaffold(
         BottomNavItem("Home", Routes.HOME, Icons.Default.Home),
         BottomNavItem("Upload", Routes.UPLOAD, Icons.Default.Upload),
         BottomNavItem("Search", Routes.SEARCH, Icons.Default.Search),
-        BottomNavItem("History", Routes.HISTORY, Icons.Default.DateRange),
+        BottomNavItem("Applications", Routes.APPLICATIONS, Icons.Default.Work),
         BottomNavItem("Profile", Routes.PROFILE, Icons.Default.Person)
     )
-
     val currentBackStack by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStack?.destination?.route ?: Routes.HOME
 

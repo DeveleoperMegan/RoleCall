@@ -44,6 +44,10 @@ class JobDetailViewModel @Inject constructor(
     fun applyToJob(job: JobItem) {
         viewModelScope.launch { repository.applyToJob(job) }
     }
+
+    fun updateJobStatus(jobId: String, newStatus: String) {
+        viewModelScope.launch { repository.updateJobStatus(jobId, newStatus) }
+    }
 }
 
 @Composable
@@ -62,13 +66,13 @@ fun JobDetailScreen(navController: NavController, job: JobItem?) {
 
     val isJobSaved = savedJobs.any { it.id == job.id }
     var applied by remember { mutableStateOf(false) }
+    var currentStatus by remember { mutableStateOf(job.status) }
 
     RoleCallScaffold(
         navController = navController,
         title = "Job Details",
         showSearchBar = false
     ) { modifier ->
-        // Enable vertical scrolling for long descriptions
         Column(
             modifier = modifier
                 .padding(16.dp)
@@ -93,8 +97,9 @@ fun JobDetailScreen(navController: NavController, job: JobItem?) {
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = when {
-                        job.matchScore >= 80f -> "Strong Match"
-                        job.matchScore >= 60f -> "Good Match"
+                        job.matchScore >= 90f -> "Excellent Match"
+                        job.matchScore >= 70f -> "Strong Match"
+                        job.matchScore >= 50f -> "Good Match"
                         else -> "Average Match"
                     },
                     style = MaterialTheme.typography.titleMedium,
@@ -123,7 +128,47 @@ fun JobDetailScreen(navController: NavController, job: JobItem?) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text("Full Description", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = PrimaryText)
+            // Key Matching Skills
+            if (job.keySkills.isNotEmpty()) {
+                Text(
+                    "Key Matching Skills",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = PrimaryText
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    job.keySkills.forEach { skill ->
+                        Text("• $skill", style = MaterialTheme.typography.bodyMedium, color = SecondaryText)
+                    }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+
+            // Matching Phrases
+            if (job.matchingPhrases.isNotEmpty()) {
+                Text(
+                    "Matching Phrases",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = PrimaryText
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    job.matchingPhrases.forEach { phrase ->
+                        Text("→ $phrase", style = MaterialTheme.typography.bodyMedium, color = AccentSuccess)
+                    }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+
+            // Full Description
+            Text(
+                "Full Description",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = PrimaryText
+            )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 job.description.ifBlank { "No description provided." },
@@ -133,13 +178,44 @@ fun JobDetailScreen(navController: NavController, job: JobItem?) {
 
             if (job.postUrl != null) {
                 Spacer(modifier = Modifier.height(16.dp))
-                TextButton(onClick = { /* Open in browser */ }) {
+                TextButton(onClick = { /* open browser */ }) {
                     Text("View Original Posting", color = UiInteractive)
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Status chips
+            Text(
+                "Application Status",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = PrimaryText
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                listOf("saved", "applied", "interviewing", "offer").forEach { status ->
+                    FilterChip(
+                        selected = currentStatus == status,
+                        onClick = {
+                            currentStatus = status
+                            viewModel.updateJobStatus(job.id, status)
+                        },
+                        label = { Text(status.replaceFirstChar { it.uppercase() }, color = PrimaryText) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = AccentSuccess,
+                            selectedLabelColor = PrimaryText
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Save and Apply buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -162,6 +238,7 @@ fun JobDetailScreen(navController: NavController, job: JobItem?) {
                             if (!isJobSaved) viewModel.saveJob(job)
                             viewModel.applyToJob(job)
                             applied = true
+                            currentStatus = "applied"
                         }
                     },
                     modifier = Modifier.weight(1f),

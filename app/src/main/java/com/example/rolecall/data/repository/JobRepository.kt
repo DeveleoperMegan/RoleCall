@@ -16,7 +16,8 @@ class JobRepository(
     private val matchHistoryDao: MatchHistoryDao
 ) {
 
-    // ── Saved Jobs ──
+    // ── Saved / applied jobs ────────────────────────────────────────────────
+
     fun getAllSavedJobs(): Flow<List<JobItem>> {
         return savedJobDao.getAllSavedJobs().map { entities ->
             entities.map { it.toJobItem() }
@@ -29,6 +30,18 @@ class JobRepository(
         }
     }
 
+    fun getJobsByStatus(status: String): Flow<List<JobItem>> {
+        return savedJobDao.getJobsByStatus(status).map { entities ->
+            entities.map { it.toJobItem() }
+        }
+    }
+
+    fun getAllJobs(): Flow<List<JobItem>> {
+        return savedJobDao.getAllJobs().map { entities ->
+            entities.map { it.toJobItem() }
+        }
+    }
+
     fun isJobSaved(jobId: String): Flow<Boolean> {
         return savedJobDao.isJobSaved(jobId)
     }
@@ -37,15 +50,20 @@ class JobRepository(
         savedJobDao.saveJob(job.toEntity())
     }
 
-    suspend fun applyToJob(job: JobItem) {
-        savedJobDao.updateJobStatus(job.id, "applied")
-    }
-
     suspend fun deleteSavedJob(job: JobItem) {
         savedJobDao.deleteJob(job.toEntity())
     }
 
-    // ── Resumes ──
+    suspend fun applyToJob(job: JobItem) {
+        savedJobDao.updateJobStatus(job.id, "applied")
+    }
+
+    suspend fun updateJobStatus(jobId: String, status: String) {
+        savedJobDao.updateJobStatus(jobId, status)
+    }
+
+    // ── Resumes ─────────────────────────────────────────────────────────────
+
     suspend fun saveResume(name: String, rawText: String): Long {
         return resumeDao.insertResume(ResumeEntity(name = name, rawText = rawText))
     }
@@ -58,7 +76,8 @@ class JobRepository(
         return resumeDao.getAllResumes()
     }
 
-    // ── Match History ──
+    // ── Match history ───────────────────────────────────────────────────────
+
     suspend fun recordMatch(resumeId: Long, jobId: String, score: Double) {
         matchHistoryDao.insertMatch(
             MatchHistoryEntity(resumeId = resumeId, jobId = jobId, score = score)
@@ -73,15 +92,16 @@ class JobRepository(
         return matchHistoryDao.getAllMatchHistory()
     }
 
-    // ── Mappers ──
+    // ── Mappers ─────────────────────────────────────────────────────────────
+
     private fun JobItem.toEntity() = SavedJobEntity(
         jobId = id,
         title = title,
         company = company,
         location = location,
-        description = description,   // no longer ""
+        description = description,
         matchScore = matchScore,
-        status = "saved",
+        status = status,
         dateSaved = System.currentTimeMillis(),
         maxSalary = maxSalary,
         minSalary = minSalary,
@@ -99,6 +119,7 @@ class JobRepository(
         maxSalary = maxSalary,
         minSalary = minSalary,
         postDate = postDate,
-        postUrl = postUrl
+        postUrl = postUrl,
+        status = status
     )
 }

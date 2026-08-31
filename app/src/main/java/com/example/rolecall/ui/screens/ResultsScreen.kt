@@ -1,32 +1,25 @@
 package com.example.rolecall.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.rolecall.data.model.JobItem
 import com.example.rolecall.ui.components.JobCard
 import com.example.rolecall.ui.components.RoleCallScaffold
-import com.example.rolecall.ui.theme.SecondaryText
 import com.example.rolecall.ui.viewmodel.ResultsViewModel
 import com.google.gson.Gson
 import java.net.URLEncoder
-import androidx.compose.foundation.layout.fillMaxSize
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,6 +43,10 @@ fun ResultsScreen(
 
     var localSearchQuery by remember { mutableStateOf(searchQuery) }
 
+    // Minimum match score state
+    var minScore by remember { mutableStateOf(0f) }
+    var minScoreText by remember { mutableStateOf("0") }
+
     val matchResults by MatchResultsHolder.results.collectAsState()
 
     LaunchedEffect(matchResults) {
@@ -58,13 +55,17 @@ fun ResultsScreen(
         }
     }
 
-    val filteredJobs = remember(displayedJobs, localSearchQuery) {
-        if (localSearchQuery.isBlank()) displayedJobs
-        else displayedJobs.filter {
-            it.title.contains(localSearchQuery, ignoreCase = true) ||
-                    it.company.contains(localSearchQuery, ignoreCase = true) ||
-                    it.location.contains(localSearchQuery, ignoreCase = true)
+    val filteredJobs = remember(displayedJobs, localSearchQuery, minScore) {
+        val queryFiltered = if (localSearchQuery.isBlank()) {
+            displayedJobs
+        } else {
+            displayedJobs.filter {
+                it.title.contains(localSearchQuery, ignoreCase = true) ||
+                        it.company.contains(localSearchQuery, ignoreCase = true) ||
+                        it.location.contains(localSearchQuery, ignoreCase = true)
+            }
         }
+        queryFiltered.filter { it.matchScore >= minScore }
     }
 
     val shouldLoadMore = remember {
@@ -98,67 +99,123 @@ fun ResultsScreen(
         showSearchBar = true,
         onSearchQueryChanged = { query -> localSearchQuery = query }
     ) { modifier ->
-        PullToRefreshBox(
-            isRefreshing = isRefreshing,
-            onRefresh = { viewModel.refresh() },
-            modifier = modifier
-        ) {
-            if (filteredJobs.isEmpty() && !isLoadingMore) {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No jobs match your search.", color = SecondaryText)
-                }
-            } else {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(filteredJobs) { job ->
-                        val isJobSaved = savedJobs.any { it.id == job.id }
-                        JobCard(
-                            job = job,
-                            onClick = {
-                                val jobJson = Gson().toJson(job)
-                                val encodedJson = URLEncoder.encode(jobJson, "UTF-8")
-                                navController.navigate("job_detail/$encodedJson")
-                            },
-                            isSaved = isJobSaved,
-                            onSaveClick = {
-                                if (isJobSaved) viewModel.deleteJob(job)
-                                else viewModel.saveJob(job)
-                            }
+        Column(modifier = modifier.fillMaxSize()) {
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = { viewModel.refresh() },
+                modifier = Modifier.weight(1f)
+            ) {
+                if (filteredJobs.isEmpty() && !isLoadingMore) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "No jobs match your search or minimum score.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                } else {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(filteredJobs) { job ->
+                            val isJobSaved = savedJobs.any { it.id == job.id }
+                            JobCard(
+                                job = job,
+                                onClick = {
+                                    val jobJson = Gson().toJson(job)
+                                    val encodedJson = URLEncoder.encode(jobJson, "UTF-8")
+                                    navController.navigate("job_detail/$encodedJson")
+                                },
+                                isSaved = isJobSaved,
+                                onSaveClick = {
+                                    if (isJobSaved) viewModel.deleteJob(job)
+                                    else viewModel.saveJob(job)
+                                }
+                            )
+                        }
 
-                    if (isLoadingMore) {
-                        item {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator()
+                        if (isLoadingMore) {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            }
+                        }
+
+                        if (!hasMorePages && filteredJobs.isNotEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        "All results loaded",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     }
+                }
+            }
 
-                    if (!hasMorePages && filteredJobs.isNotEmpty()) {
-                        item {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    "All results loaded",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = SecondaryText
-                                )
-                            }
-                        }
-                    }
+            // Bottom filter panel
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = 8.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Min score:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    OutlinedTextField(
+                        value = minScoreText,
+                        onValueChange = { input ->
+                            minScoreText = input
+                            minScore = input.toFloatOrNull()?.coerceIn(0f, 100f) ?: 0f
+                        },
+                        modifier = Modifier.width(72.dp),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            cursorColor = MaterialTheme.colorScheme.primary
+                        )
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Slider(
+                        value = minScore,
+                        onValueChange = { newValue ->
+                            minScore = newValue
+                            minScoreText = newValue.toInt().toString()
+                        },
+                        valueRange = 0f..100f,
+                        steps = 10,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
         }

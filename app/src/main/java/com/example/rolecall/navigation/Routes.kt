@@ -20,4 +20,5 @@ object Routes {
     const val SEARCH_RESULTS = "search_results"
     const val SEARCH = "search"                       // resume search page
     const val WEB_SEARCH_ANIMATION = "web_search_animation/{query}"
+    const val APPLICATIONS = "applications"
 }

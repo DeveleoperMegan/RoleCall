@@ -28,9 +28,24 @@ object JobMapper {
     /**
      * Converts a list of [MatchJsonItem] into a list of [JobItem].
      * Handles nullability and maps similarity to a 0–100 float.
+     *
+     * TEMPORARY: Adds mock matchingPhrases and keySkills when the backend
+     * does not provide them. Remove the fallback lines when real data is available.
      */
     fun fromMatchItems(matches: List<MatchJsonItem>?): List<JobItem> {
         return matches?.map { match ->
+            // Mock fallbacks for testing (remove once backend provides real fields)
+            val mockPhrases = listOf(
+                "Strong communication skills",
+                "Experience with relevant technologies",
+                "Proven ability to work in a team"
+            )
+            val mockSkills = listOf(
+                "Communication",
+                "Problem Solving",
+                "Team Collaboration"
+            )
+
             JobItem(
                 id = match.id,
                 title = match.title,
@@ -42,8 +57,8 @@ object JobMapper {
                 minSalary = match.minSalary,
                 postDate = match.postDate,
                 postUrl = match.postUrl,
-                matchingPhrases = match.matchingPhrases ?: emptyList(),
-                keySkills = match.keySkills ?: emptyList()
+                matchingPhrases = match.matchingPhrases ?: mockPhrases,   // fallback
+                keySkills = match.keySkills ?: mockSkills                // fallback
             )
         } ?: emptyList()
     }

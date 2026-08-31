@@ -13,7 +13,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.rolecall.data.model.JobItem
 import com.example.rolecall.ui.theme.*
+import androidx.compose.ui.graphics.Color
 
+/**
+ * Job card is intentionally always white with dark text.
+ * This keeps the cards highly readable against both the dark scaffold
+ * and the light scaffold. The match badge provides the colour accent.
+ */
 @Composable
 fun JobCard(
     job: JobItem,
@@ -29,7 +35,7 @@ fun JobCard(
             .padding(vertical = 4.dp, horizontal = 8.dp)
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = PrimaryText
+            containerColor = Color.White
         ),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -44,7 +50,7 @@ fun JobCard(
                 Text(
                     text = job.title,
                     style = MaterialTheme.typography.titleMedium,
-                    color = Border
+                    color = Border   // dark blue-gray, readable on white
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
