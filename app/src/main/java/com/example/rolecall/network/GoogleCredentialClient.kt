@@ -41,12 +41,12 @@ object GoogleCredentialClient {
             val credential = GoogleIdTokenCredential.createFrom(response.credential.data)
             GoogleTokens(idToken = credential.idToken, rawNonce = rawNonce)
         } catch (e: GetCredentialCancellationException) {
-        Log.i("GOOGLE_OAUTH", "Google sign-in cancelled by user")
-        null
-    } catch (e: Exception) {
-            Log.e("GOOGLE_AUTH", "Credential request has failed")
+            Log.e("GOOGLE_OAUTH", "Credential cancelled", e)
             null
-        }
+        } catch (e: Exception) {
+        Log.e("GOOGLE_AUTH", "Credential request failed", e)
+        null
+    }
     }
 
 }
