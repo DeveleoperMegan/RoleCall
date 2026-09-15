@@ -41,9 +41,4 @@ class TokenManager(context: Context) {
             remove("REFRESH_TOKEN")
         }
     }
-
-
-    fun clearJWT() {
-        clearTokens()
-    }
 }

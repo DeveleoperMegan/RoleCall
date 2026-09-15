@@ -23,7 +23,8 @@ fun HomeScreen(navController: NavController) {
 
     fun submitSearch() {
         if (searchQuery.isNotBlank()) {
-            navController.navigate("web_search_animation/$searchQuery")
+            val encoded = java.net.URLEncoder.encode(searchQuery, "UTF-8")
+            navController.navigate("web_search_animation/$encoded")
         }
     }
 
@@ -39,7 +40,6 @@ fun HomeScreen(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Prominent logo
             Image(
                 painter = painterResource(id = R.drawable.rolecall_logo),
                 contentDescription = "RoleCall Logo",
@@ -59,7 +59,6 @@ fun HomeScreen(navController: NavController) {
             )
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Search field
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -86,6 +85,17 @@ fun HomeScreen(navController: NavController) {
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+
+            // Button to navigate to Resume Builder
+            OutlinedButton(
+                onClick = { navController.navigate(Routes.RESUME_BUILDER) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Build Your Resume", color = UiInteractive)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             Text(
                 "Already have a resume?",
                 style = MaterialTheme.typography.bodyMedium,
