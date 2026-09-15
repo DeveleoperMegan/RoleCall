@@ -59,7 +59,8 @@ fun RoleCallScaffold(
 
     fun performSearch() {
         if (searchQuery.isNotBlank()) {
-            navController.navigate("web_search_animation/$searchQuery")
+            val encoded = java.net.URLEncoder.encode(searchQuery, "UTF-8")
+            navController.navigate("web_search_animation/$encoded")
         }
     }
 

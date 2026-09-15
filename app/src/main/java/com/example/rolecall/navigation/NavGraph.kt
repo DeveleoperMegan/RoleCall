@@ -128,7 +128,7 @@ fun RoleCallNavGraph(
             GeneratedResumePreviewScreen(navController, resumeId)
         }
         composable(
-            "preview_local/{resumeId}",
+            Routes.PREVIEW_LOCAL,
             arguments = listOf(navArgument("resumeId") { type = NavType.StringType })
         ) { backStackEntry ->
             val resumeId = backStackEntry.arguments?.getString("resumeId") ?: ""

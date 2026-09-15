@@ -13,8 +13,10 @@ package com.example.rolecall.data.model
  * @param minSalary The minimum salary for the position, if available.
  * @param postDate The date the job was posted, in ISO 8601 format, if available.
  * @param postUrl The original URL of the job posting, if available.
+ * @param matchingPhrases Phrases from the résumé that contributed most to this match.
+ * @param keySkills Skills identified as highly relevant to this job.
+ * @param status The user's application status: saved, applied, interviewing, or offer.
  */
-
 data class JobItem(
     val id: String,
     val title: String,
@@ -26,8 +28,7 @@ data class JobItem(
     val minSalary: Double? = null,
     val postDate: String? = null,
     val postUrl: String? = null,
-    // NEW fields
     val matchingPhrases: List<String> = emptyList(),
     val keySkills: List<String> = emptyList(),
-    val status: String = "saved"   // NEW: saved, applied, interviewing, offer
+    val status: String = "saved"
 )

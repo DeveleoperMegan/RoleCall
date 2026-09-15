@@ -10,13 +10,13 @@ if (localPropsFile.exists()) {
 
 val supabaseUrl: String = localProps.getProperty("SUPABASE_URL") ?: ""
 val supabaseKey: String = localProps.getProperty("SUPABASE_KEY") ?: ""
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt.android)
-    id("com.google.devtools.ksp")
-
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -26,7 +26,7 @@ android {
     defaultConfig {
         applicationId = "com.example.rolecall"
         minSdk = 28
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -38,7 +38,6 @@ android {
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_KEY", "\"$supabaseKey\"")
     }
-
 
     buildTypes {
         release {
@@ -63,6 +62,7 @@ android {
         }
     }
 }
+
 kotlin {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_17)
@@ -70,7 +70,7 @@ kotlin {
 }
 
 dependencies {
-    // Supabase Auth deps
+    // Supabase Auth
     implementation(platform("io.github.jan-tennert.supabase:bom:3.0.0"))
     implementation("io.github.jan-tennert.supabase:auth-kt")
     implementation("io.ktor:ktor-client-android:3.0.0")
@@ -81,13 +81,13 @@ dependencies {
     implementation("androidx.credentials:credentials-play-services-auth:1.6.0")
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
 
-    // JWT Store
+    // JSON serialization
+    implementation(libs.gson)
+
+    // Encrypted token storage
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
-    // extended icons
-    implementation("androidx.compose.material:material-icons-extended")
-
-    // Core Android/Compose deps
+    // Core Android / Compose
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
@@ -97,6 +97,36 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.google.fonts.compose)
+
+    // Room
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+
+    // Hilt
+    implementation(libs.androidx.hilt.core)
+    ksp(libs.androidx.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
+
+    // Icons
+    implementation(libs.androidx.material.icons.extended)
+
+    // CameraX
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
+
+    // DataStore
+    implementation(libs.androidx.datastore.preferences)
+
+    // Coil
+    implementation(libs.coil.compose)
+
+    // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -104,32 +134,4 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    implementation(libs.androidx.navigation.compose)
-    implementation(libs.google.fonts.compose)
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler)
-    implementation("com.google.dagger:hilt-android:2.51.1")
-    ksp("com.google.dagger:hilt-android-compiler:2.51.1")
-    implementation(libs.androidx.hilt.navigation.compose)
-    implementation(libs.androidx.material.icons.extended)
-
-    //retrofit dependencies
-    implementation(libs.retrofit.core)
-    implementation(libs.retrofit.gson)
-    implementation(libs.okhttp.logging)
-
-    //camerax dependencies
-    implementation(libs.androidx.camera.core)
-    implementation(libs.androidx.camera.camera2)
-    implementation(libs.androidx.camera.lifecycle)
-    implementation(libs.androidx.camera.view)
-
-    //data store dependencies for onboarding
-    implementation(libs.androidx.datastore.preferences)
-
-    //coil dependencies for preview
-    implementation(libs.coil.compose)
-    //pull to refresh
-    implementation("androidx.compose.material3:material3:1.3.0")
 }
