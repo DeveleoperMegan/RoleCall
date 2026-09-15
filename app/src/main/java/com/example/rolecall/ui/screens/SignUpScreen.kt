@@ -1,17 +1,22 @@
 package com.example.rolecall.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.rolecall.navigation.Routes
+import com.example.rolecall.ui.components.ProviderButtonRow
 import com.example.rolecall.ui.components.RoleCallScaffold
+import com.example.rolecall.ui.components.findActivity
 import com.example.rolecall.ui.theme.PrimaryText
 import com.example.rolecall.ui.theme.SecondaryText
 import com.example.rolecall.ui.theme.UiInteractive
@@ -21,6 +26,7 @@ import com.example.rolecall.ui.viewmodel.AuthViewModel
 fun SignupScreen(navController: NavController) {
     val viewModel: AuthViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
+    val activity = LocalContext.current.findActivity()
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -37,7 +43,9 @@ fun SignupScreen(navController: NavController) {
 
     RoleCallScaffold(navController = navController, title = "Sign Up", showSearchBar = false) { modifier ->
         Column(
-            modifier = modifier.padding(24.dp),
+            modifier = modifier
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -131,6 +139,15 @@ fun SignupScreen(navController: NavController) {
                     Text("Sign Up")
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Google sign-up — same call as LoginScreen; Supabase creates the
+            // user automatically if no account exists for that Google email.
+            ProviderButtonRow(
+                onGoogleClick = { viewModel.signInWithGoogle(activity) },
+                enabled = !uiState.isLoading
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
