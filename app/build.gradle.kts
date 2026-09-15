@@ -62,6 +62,11 @@ dependencies {
     implementation("io.ktor:ktor-client-android:3.0.0")
     implementation("io.ktor:ktor-client-auth:3.0.0")
 
+    // Google OAuth
+    implementation("androidx.credentials:credentials:1.6.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.6.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+
     // JWT Store
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 

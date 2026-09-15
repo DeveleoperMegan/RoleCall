@@ -1,10 +1,13 @@
 package com.example.rolecall.network
 
+import android.app.Activity
 import android.util.Log
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import io.github.jan.supabase.auth.providers.builtin.IDToken
 
 object AuthRepository {
 
@@ -51,6 +54,33 @@ object AuthRepository {
                 jwt
             } catch (e: Exception) {
                 e.printStackTrace()
+                null
+            }
+        }
+    }
+
+    // Authenticate user with Google Sign-in
+    suspend fun loginWithGoogle(activity: Activity, tokenManager: TokenManager): String? {
+        val tokens = GoogleCredentialClient.requestIdToken(activity) ?: return null
+
+        return withContext(Dispatchers.IO) {
+            try {
+                SupabaseClient.client.auth.signInWith(IDToken) {
+                    idToken = tokens.idToken
+                    provider = Google
+                    nonce = tokens.rawNonce
+                }
+
+                val jwt = SupabaseClient.client.auth.currentAccessTokenOrNull()
+                val refreshToken = SupabaseClient.client.auth.currentSessionOrNull()?.refreshToken
+
+                if(jwt != null) {
+                    tokenManager.saveJWT(jwt)
+                    if(refreshToken != null) tokenManager.saveRefreshToken(refreshToken)
+                }
+                jwt
+            } catch (e: Exception) {
+                Log.e("SUPABASE", "Google Sign-in Error")
                 null
             }
         }

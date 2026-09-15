@@ -1,17 +1,23 @@
 package com.example.rolecall.ui.screens
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.rolecall.R
 import com.example.rolecall.navigation.Routes
 import com.example.rolecall.ui.components.RoleCallScaffold
+import com.example.rolecall.ui.components.findActivity
 import com.example.rolecall.ui.theme.PrimaryText
 import com.example.rolecall.ui.theme.SecondaryText
 import com.example.rolecall.ui.theme.UiInteractive
@@ -20,6 +26,7 @@ import com.example.rolecall.ui.theme.UiInteractive
 fun LoginScreen(navController: NavController) {
     val viewModel: AuthViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
+    val activity = LocalContext.current.findActivity()
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -106,6 +113,36 @@ fun LoginScreen(navController: NavController) {
                 } else {
                     Text("Log In")
                 }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                HorizontalDivider(modifier = Modifier.weight(1f), color = SecondaryText)
+                Text(
+                    "or",
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = SecondaryText
+                )
+                HorizontalDivider(modifier = Modifier.weight(1f), color = SecondaryText)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedButton(
+                onClick = { viewModel.signInWithGoogle(activity) },
+                enabled = !uiState.isLoading,
+                modifier = Modifier.fillMaxWidth(),
+                border = BorderStroke(1.dp, SecondaryText)
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.ic_google),
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text("Continue with Google", color = PrimaryText)
             }
 
             Spacer(modifier = Modifier.height(16.dp))

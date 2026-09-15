@@ -1,5 +1,6 @@
 package com.example.rolecall.ui.screens
 
+import android.app.Activity
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -33,6 +34,16 @@ class AuthViewModel @Inject constructor(
         val existingToken = tokenManager.getJWT()
         if (existingToken != null) {
             _uiState.update { it.copy(isLoggedIn = true) }
+        }
+    }
+
+    fun signInWithGoogle(activity: Activity) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage =  null) }
+            val jwt = AuthRepository.loginWithGoogle(activity, tokenManager)
+            _uiState.update {
+                it.copy(isLoading = false, isLoggedIn = jwt != null)
+            }
         }
     }
 
