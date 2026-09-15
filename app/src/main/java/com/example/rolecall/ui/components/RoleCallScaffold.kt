@@ -23,7 +23,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.rolecall.R
 import com.example.rolecall.navigation.Routes
-import com.example.rolecall.ui.screens.AuthViewModel
+import com.example.rolecall.ui.viewmodel.AuthViewModel
 import com.example.rolecall.ui.theme.*
 import androidx.compose.foundation.clickable
 
@@ -49,9 +49,9 @@ fun RoleCallScaffold(
 
     val navItems = listOf(
         BottomNavItem("Home", Routes.HOME, Icons.Default.Home),
-        BottomNavItem("Upload", Routes.UPLOAD, Icons.Default.Upload),
-        BottomNavItem("Search", Routes.SEARCH, Icons.Default.Search),
         BottomNavItem("Applications", Routes.APPLICATIONS, Icons.Default.Work),
+        BottomNavItem("Resumes", Routes.MY_RESUMES, Icons.Default.Description),
+        BottomNavItem("Upload", Routes.UPLOAD, Icons.Default.Upload),
         BottomNavItem("Profile", Routes.PROFILE, Icons.Default.Person)
     )
     val currentBackStack by navController.currentBackStackEntryAsState()

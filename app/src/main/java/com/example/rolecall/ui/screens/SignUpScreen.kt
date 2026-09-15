@@ -15,6 +15,7 @@ import com.example.rolecall.ui.components.RoleCallScaffold
 import com.example.rolecall.ui.theme.PrimaryText
 import com.example.rolecall.ui.theme.SecondaryText
 import com.example.rolecall.ui.theme.UiInteractive
+import com.example.rolecall.ui.viewmodel.AuthViewModel
 
 @Composable
 fun SignupScreen(navController: NavController) {
@@ -28,7 +29,7 @@ fun SignupScreen(navController: NavController) {
 
     LaunchedEffect(uiState.isLoggedIn) {
         if (uiState.isLoggedIn) {
-            navController.navigate(Routes.UPLOAD) {
+            navController.navigate(Routes.HOME) {
                 popUpTo(Routes.SIGNUP) { inclusive = true }
             }
         }
