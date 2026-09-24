@@ -1,8 +1,10 @@
 package com.example.rolecall.network
 
 import com.example.rolecall.BuildConfig
-import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.auth.ExternalAuthAction
+import io.github.jan.supabase.auth.FlowType
+import io.github.jan.supabase.createSupabaseClient
 import io.ktor.client.engine.android.Android
 
 object SupabaseClient {
@@ -19,6 +21,10 @@ object SupabaseClient {
         install(Auth) {
             autoLoadFromStorage = true
             alwaysAutoRefresh = true
+            scheme = "rolecall"
+            host = "login"
+            flowType = FlowType.PKCE
+            defaultExternalAuthAction = ExternalAuthAction.CustomTabs()
         }
     }
 }

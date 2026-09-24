@@ -117,6 +117,8 @@ fun LoginScreen(navController: NavController) {
 
             ProviderButtonRow(
                 onGoogleClick = { viewModel.signInWithGoogle(activity) },
+                onGithubClick = { viewModel.signInWithGithub() },
+                onMicrosoftClick = { viewModel.signInWithMicrosoft() },
                 enabled = !uiState.isLoading
             )
 

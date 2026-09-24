@@ -146,6 +146,8 @@ fun SignupScreen(navController: NavController) {
             // user automatically if no account exists for that Google email.
             ProviderButtonRow(
                 onGoogleClick = { viewModel.signInWithGoogle(activity) },
+                onGithubClick = { viewModel.signInWithGithub() },
+                onMicrosoftClick = { viewModel.signInWithMicrosoft() },
                 enabled = !uiState.isLoading
             )
 

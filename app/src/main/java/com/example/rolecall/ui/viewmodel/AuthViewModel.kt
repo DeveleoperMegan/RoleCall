@@ -5,8 +5,11 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.rolecall.network.AuthRepository
+import com.example.rolecall.network.SupabaseClient
 import com.example.rolecall.network.TokenManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,7 +20,7 @@ import javax.inject.Inject
 /**
  * UI state for the authentication screens.
  *
- * @param isLoggedIn true when a valid JWT is present in TokenManager
+ * @param isLoggedIn true when Supabase reports an active session
  * @param isLoading  true while a network auth call is in flight
  * @param errorMessage human-readable error to surface in the UI, or null
  */
@@ -44,17 +47,28 @@ class AuthViewModel @Inject constructor(
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
     init {
-        // On app start, check whether a JWT is already stored.
-        // If so, treat the user as logged in without hitting the network.
-        val existingToken = tokenManager.getJWT()
-        if (existingToken != null) {
-            _uiState.update { it.copy(isLoggedIn = true) }
+        // Single source of truth for login state. Fires on all sign in, sign out,
+        // deep link returns, restored sessions, and token refreshes.
+        viewModelScope.launch {
+            SupabaseClient.client.auth.sessionStatus.collect { status ->
+                when (status) {
+                    is SessionStatus.Authenticated ->
+                        _uiState.update { it.copy(isLoggedIn = true, isLoading = false) }
+
+                    is SessionStatus.NotAuthenticated ->
+                        _uiState.update { it.copy(isLoggedIn = false) }
+
+                    // leave state alone if initializing or refresh failure so the UI
+                    // doesn't flash sign in during startup.
+                    else -> Unit
+                }
+            }
         }
     }
 
     /**
      * Register a new user with email + password.
-     * On success, the returned JWT is persisted and isLoggedIn flips to true.
+     * On success, the session collector sets isLoggedIn and clears isLoading.
      */
     fun signUp(email: String, password: String) {
         viewModelScope.launch {
@@ -65,11 +79,9 @@ class AuthViewModel @Inject constructor(
             val result = AuthRepository.signUpWithEmail(email, password, tokenManager)
 
             // 3. Update state based on the outcome
-            if (result != null) {
-                _uiState.update { it.copy(isLoggedIn = true, isLoading = false) }
-            } else {
+            if (result == null) {
                 _uiState.update {
-                    it.copy(isLoading = false, errorMessage = "Sign up failed. Try again.")
+                    it.copy(isLoading = false, errorMessage = "Sign Up Failed. Try again.")
                 }
             }
         }
@@ -77,7 +89,7 @@ class AuthViewModel @Inject constructor(
 
     /**
      * Authenticate an existing user with email + password.
-     * On success, the returned JWT is persisted and isLoggedIn flips to true.
+     * On success, the session collector sets isLoggedIn and clears isLoading.
      */
     fun logIn(email: String, password: String) {
         viewModelScope.launch {
@@ -88,11 +100,9 @@ class AuthViewModel @Inject constructor(
             val result = AuthRepository.loginWithEmail(email, password, tokenManager)
 
             // 3. Update state based on the outcome
-            if (result != null) {
-                _uiState.update { it.copy(isLoggedIn = true, isLoading = false) }
-            } else {
+            if (result == null) {
                 _uiState.update {
-                    it.copy(isLoading = false, errorMessage = "Login failed. Check your credentials.")
+                    it.copy(isLoading = false, errorMessage = "Login Failed. Check your credentials.")
                 }
             }
         }
@@ -122,15 +132,45 @@ class AuthViewModel @Inject constructor(
             val result = AuthRepository.loginWithGoogle(activity, tokenManager)
 
             // 3. Update state based on the outcome
-            if (result != null) {
-                _uiState.update { it.copy(isLoggedIn = true, isLoading = false) }
-            } else {
+            // Covers both, canceled sign in or real failure.
+            if (result == null) {
                 _uiState.update {
-                    it.copy(isLoading = false, errorMessage = "Google sign-in failed. Try again.")
+                    it.copy(isLoading = false)
                 }
             }
         }
     }
+
+    /**
+     * Authenticate via GitHub in custom browser tab.
+     *
+     * Deliberately does not set isLoading: this returns the moment the browser
+     * opens, and if the user backs out without signing in there is no callback
+     * to clear the spinner. The browser appearing is the feedback.
+     */
+    fun signInWithGithub() {
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(errorMessage = null)
+            }
+            AuthRepository.loginWithGithub()
+        }
+    }
+
+    /**
+     * Authenticate via Microsoft OAuth in custom browser tab.
+     *
+     * Same shape as GitHub Sign-in
+     */
+    fun signInWithMicrosoft() {
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(errorMessage = null)
+            }
+            AuthRepository.loginWithMicrosoft()
+        }
+    }
+
 
     /**
      * Sign the user out of Supabase and clear any locally stored tokens.
@@ -140,7 +180,6 @@ class AuthViewModel @Inject constructor(
     fun logOut() {
         viewModelScope.launch {
             AuthRepository.signOut(tokenManager)
-            _uiState.update { it.copy(isLoggedIn = false) }
         }
     }
 

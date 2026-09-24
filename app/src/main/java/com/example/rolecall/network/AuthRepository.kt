@@ -4,6 +4,8 @@ import android.app.Activity
 import android.util.Log
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Google
+import io.github.jan.supabase.auth.providers.Github
+import io.github.jan.supabase.auth.providers.Azure
 import io.github.jan.supabase.auth.providers.builtin.Email
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -53,7 +55,7 @@ object AuthRepository {
                 }
                 jwt
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("EMAIL", "Error Processing Email", e)
                 null
             }
         }
@@ -80,8 +82,33 @@ object AuthRepository {
                 }
                 jwt
             } catch (e: Exception) {
-                Log.e("SUPABASE", "Google Sign-in Error")
+                Log.e("SUPABASE", "Google Sign-in Error", e)
                 null
+            }
+        }
+    }
+
+    // Browser-based OAuth. Returns as soon as the custom tab opens.
+    // The session arrives via deep link and is picked up by sessionStatus collector in RoleCallApplication.kt
+    suspend fun loginWithGithub() {
+        withContext(Dispatchers.IO) {
+            try {
+                SupabaseClient.client.auth.signInWith(Github)
+            } catch (e: Exception) {
+                Log.e("SUPABASE", "Github Sign-in Error", e)
+        }
+        }
+    }
+
+    // Browser-based Microsoft OAuth, same shape as GitHub. Session arrives via deep link.
+    suspend fun loginWithMicrosoft() {
+        withContext(Dispatchers.IO) {
+            try {
+                SupabaseClient.client.auth.signInWith(Azure) {
+                    scopes.addAll(listOf("email", "profile", "openid"))
+                }
+            } catch (e: Exception) {
+                Log.e("SUPABASE", "Microsoft Sign-in Error")
             }
         }
     }
