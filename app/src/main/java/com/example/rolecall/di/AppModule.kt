@@ -6,28 +6,18 @@ import com.example.rolecall.data.local.AppDatabase
 import com.example.rolecall.data.local.dao.MatchHistoryDao
 import com.example.rolecall.data.local.dao.ResumeDao
 import com.example.rolecall.data.local.dao.SavedJobDao
+import com.example.rolecall.data.local.dao.GeneratedResumeDao
 import com.example.rolecall.data.repository.JobRepository
 import com.example.rolecall.network.FastAPIRepository
+import com.example.rolecall.network.ResumeCreationRepository
 import com.example.rolecall.network.TokenManager
+import com.example.rolecall.network.ProfileRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
-
-// ──────────────────────────────────────────────────────────────────────────────
-// AppModule
-// Hilt dependency injection module. Provides singleton instances of:
-//   - TokenManager (stores/retrieves JWT in EncryptedSharedPreferences)
-//   - FastAPIRepository (Ktor-based HTTP client with Bearer auth)
-//   - Room database and all DAOs
-//   - JobRepository (local DB operations)
-//
-// Note: There is no Retrofit or OkHttp here. All networking goes through
-// FastAPIRepository which uses the Ktor client from ApiClient. That client
-// already has the auth plugin configured to send the JWT as a Bearer token.
-// ──────────────────────────────────────────────────────────────────────────────
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -45,6 +35,12 @@ object AppModule {
     @Singleton
     fun provideFastAPIRepository(tokenManager: TokenManager): FastAPIRepository {
         return FastAPIRepository(tokenManager)
+    }
+
+    @Provides
+    @Singleton
+    fun provideResumeCreationRepository(tokenManager: TokenManager): ResumeCreationRepository {
+        return ResumeCreationRepository(tokenManager)
     }
 
     // ── Room Database ────────────────────────────────────────────────────────
@@ -87,5 +83,17 @@ object AppModule {
         matchHistoryDao: MatchHistoryDao
     ): JobRepository {
         return JobRepository(savedJobDao, resumeDao, matchHistoryDao)
+    }
+
+    @Provides
+    @Singleton
+    fun provideProfileRepository(tokenManager: TokenManager): ProfileRepository {
+        return ProfileRepository(tokenManager)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGeneratedResumeDao(database: AppDatabase): GeneratedResumeDao {
+        return database.generatedResumeDao()
     }
 }

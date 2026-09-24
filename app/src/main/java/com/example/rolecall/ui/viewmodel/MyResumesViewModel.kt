@@ -17,12 +17,12 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class ResumeListViewModel @Inject constructor(
+class MyResumesViewModel @Inject constructor(
     private val fastAPIRepository: FastAPIRepository,
     private val generatedResumeDao: GeneratedResumeDao
 ) : ViewModel() {
 
-    var resumes by mutableStateOf<List<ResumeItem>>(emptyList())
+    var uploadedResumes by mutableStateOf<List<ResumeItem>>(emptyList())
         private set
     var isLoading by mutableStateOf(false)
         private set
@@ -30,48 +30,69 @@ class ResumeListViewModel @Inject constructor(
         private set
     var renamingId by mutableStateOf<String?>(null)
         private set
-    var renameError by mutableStateOf<String?>(null)
+    var errorMessage by mutableStateOf<String?>(null)
         private set
 
-    init {
-        loadResumes()
-    }
-    // NEW: local generated resumes from Room
     val generatedResumes: StateFlow<List<GeneratedResumeEntity>> =
         generatedResumeDao.getAll()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-    fun loadResumes() {
+
+    init {
+        loadUploadedResumes()
+    }
+
+    fun loadUploadedResumes() {
         viewModelScope.launch {
             isLoading = true
+            errorMessage = null
             fastAPIRepository.getResumes()
-                .onSuccess { resumes = it }
-                .onFailure { resumes = emptyList() }
+                .onSuccess { uploadedResumes = it }
+                .onFailure { errorMessage = it.message ?: "Failed to load resumes" }
             isLoading = false
         }
     }
 
-    fun deleteResume(resumeId: String) {
+    fun deleteUploadedResume(resumeId: String) {
         viewModelScope.launch {
             deletingId = resumeId
             fastAPIRepository.deleteResume(resumeId)
-                .onSuccess { resumes = resumes.filter { r -> r.id != resumeId } }
-                .onFailure { /* optionally show error */ }
+                .onSuccess { uploadedResumes = uploadedResumes.filter { r -> r.id != resumeId } }
+                .onFailure { errorMessage = it.message ?: "Delete failed" }
             deletingId = null
         }
     }
 
-    fun renameResume(resumeId: String, newName: String) {
+    fun deleteGeneratedResume(entity: GeneratedResumeEntity) {
+        viewModelScope.launch {
+            deletingId = entity.id
+            generatedResumeDao.delete(entity)
+            deletingId = null
+        }
+    }
+
+    /** Rename an uploaded resume via the backend. */
+    fun renameUploadedResume(resumeId: String, newName: String) {
         viewModelScope.launch {
             renamingId = resumeId
-            renameError = null
+            errorMessage = null
             fastAPIRepository.renameResume(resumeId, newName)
                 .onSuccess {
-                    resumes = resumes.map { r ->
+                    uploadedResumes = uploadedResumes.map { r ->
                         if (r.id == resumeId) r.copy(filename = newName) else r
                     }
                 }
-                .onFailure { e -> renameError = e.message ?: "Rename failed" }
+                .onFailure { errorMessage = it.message ?: "Rename failed" }
+            renamingId = null
+        }
+    }
+
+    /** Rename a locally generated resume (Room only — no backend call needed). */
+    fun renameGeneratedResume(entity: GeneratedResumeEntity, newName: String) {
+        viewModelScope.launch {
+            renamingId = entity.id
+            generatedResumeDao.updateFilename(entity.id, newName)
             renamingId = null
         }
     }
 }
+

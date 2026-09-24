@@ -9,7 +9,6 @@ import io.ktor.client.plugins.auth.providers.bearer
 class ApiClient(private val tokenManager: TokenManager) {
 
     val fastAPIClient = HttpClient(Android) {
-        // Follow redirects if needed
         followRedirects = true
 
         install(Auth) {
@@ -25,7 +24,6 @@ class ApiClient(private val tokenManager: TokenManager) {
                         null
                     }
                 }
-
                 refreshTokens {
                     val newToken = AuthRepository.refreshAccessToken(tokenManager)
                     if (newToken != null) {
@@ -40,4 +38,7 @@ class ApiClient(private val tokenManager: TokenManager) {
             }
         }
     }
+
+    /** Exposed for debug logging and to keep token access in one place. */
+    fun getToken(): String? = tokenManager.getJWT()
 }

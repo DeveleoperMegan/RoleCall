@@ -5,6 +5,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -12,14 +13,18 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.rolecall.navigation.Routes
 import com.example.rolecall.ui.components.RoleCallScaffold
+import com.example.rolecall.ui.components.findActivity
 import com.example.rolecall.ui.theme.PrimaryText
 import com.example.rolecall.ui.theme.SecondaryText
 import com.example.rolecall.ui.theme.UiInteractive
+import com.example.rolecall.ui.viewmodel.AuthViewModel
+import com.example.rolecall.ui.components.ProviderButtonRow
 
 @Composable
 fun LoginScreen(navController: NavController) {
     val viewModel: AuthViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
+    val activity = LocalContext.current.findActivity()
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -27,7 +32,7 @@ fun LoginScreen(navController: NavController) {
 
     LaunchedEffect(uiState.isLoggedIn) {
         if (uiState.isLoggedIn) {
-            navController.navigate(Routes.UPLOAD) {
+            navController.navigate(Routes.HOME) {
                 popUpTo(Routes.LOGIN) { inclusive = true }
             }
         }
@@ -107,6 +112,15 @@ fun LoginScreen(navController: NavController) {
                     Text("Log In")
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            ProviderButtonRow(
+                onGoogleClick = { viewModel.signInWithGoogle(activity) },
+                onGithubClick = { viewModel.signInWithGithub() },
+                onMicrosoftClick = { viewModel.signInWithMicrosoft() },
+                enabled = !uiState.isLoading
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 

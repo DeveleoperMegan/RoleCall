@@ -1,5 +1,6 @@
 package com.example.rolecall
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -7,8 +8,10 @@ import androidx.navigation.compose.rememberNavController
 import com.example.rolecall.data.local.OnboardingPreferences
 import com.example.rolecall.navigation.RoleCallNavGraph
 import com.example.rolecall.navigation.Routes
+import com.example.rolecall.network.SupabaseClient
 import com.example.rolecall.ui.theme.RoleCallTheme
 import dagger.hilt.android.AndroidEntryPoint
+import io.github.jan.supabase.auth.handleDeeplinks
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 
@@ -16,6 +19,8 @@ import kotlinx.coroutines.runBlocking
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        SupabaseClient.client.handleDeeplinks(intent)
 
         val onboardingComplete = runBlocking {
             OnboardingPreferences.isOnboardingComplete(this@MainActivity).first()
@@ -31,5 +36,11 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        SupabaseClient.client.handleDeeplinks(intent)
     }
 }

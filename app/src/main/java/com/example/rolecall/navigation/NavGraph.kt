@@ -1,6 +1,7 @@
 package com.example.rolecall.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -11,6 +12,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.rolecall.data.model.JobItem
 import com.example.rolecall.ui.screens.*
+import com.example.rolecall.ui.viewmodel.AppWarmupViewModel
+import com.example.rolecall.ui.viewmodel.AuthViewModel
 import com.google.gson.Gson
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
@@ -23,8 +26,13 @@ fun RoleCallNavGraph(
     val authViewModel: AuthViewModel = hiltViewModel()
     val uiState by authViewModel.uiState.collectAsState()
 
-    val defaultStart = if (uiState.isLoggedIn) Routes.HOME else Routes.SIGNUP
+    val defaultStart = Routes.HOME
     val startDestination = startRouteOverride ?: defaultStart
+
+    val warmupViewModel: AppWarmupViewModel = hiltViewModel()
+    LaunchedEffect(Unit) {
+        warmupViewModel.warmup()
+    }
 
     NavHost(navController = navController, startDestination = startDestination) {
         composable(Routes.ONBOARDING) {
@@ -68,9 +76,6 @@ fun RoleCallNavGraph(
         composable(Routes.HISTORY) {
             HistoryScreen(navController)
         }
-        composable(Routes.RESUME_LIST) {
-            ResumeListScreen(navController)
-        }
         composable(
             Routes.PREVIEW,
             arguments = listOf(navArgument("resumeId") { type = NavType.StringType })
@@ -91,9 +96,6 @@ fun RoleCallNavGraph(
         composable(Routes.SEARCH_RESULTS) {
             SearchResultsScreen(navController, null)
         }
-        composable(Routes.SEARCH) {
-            ResumeSearchScreen(navController)
-        }
         composable(
             Routes.WEB_SEARCH_ANIMATION,
             arguments = listOf(navArgument("query") { type = NavType.StringType })
@@ -103,6 +105,37 @@ fun RoleCallNavGraph(
         }
         composable(Routes.APPLICATIONS) {
             ApplicationsScreen(navController)
+        }
+        composable(Routes.EDIT_PROFILE) {
+            EditProfileScreen(navController)
+        }
+
+        composable(Routes.CHANGE_PASSWORD) {
+            ChangePasswordScreen(navController)
+        }
+
+        composable(Routes.NOTIFICATION_SETTINGS) {
+            NotificationSettingsScreen(navController)
+        }
+        composable(Routes.RESUME_BUILDER) {
+            ResumeBuilderScreen(navController)
+        }
+        composable(
+            Routes.GENERATED_RESUME_PREVIEW,
+            arguments = listOf(navArgument("resumeId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val resumeId = backStackEntry.arguments?.getString("resumeId") ?: ""
+            GeneratedResumePreviewScreen(navController, resumeId)
+        }
+        composable(
+            Routes.PREVIEW_LOCAL,
+            arguments = listOf(navArgument("resumeId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val resumeId = backStackEntry.arguments?.getString("resumeId") ?: ""
+            LocalResumePreviewScreen(navController, resumeId)
+        }
+        composable(Routes.MY_RESUMES) {
+            MyResumesScreen(navController)
         }
     }
 }
